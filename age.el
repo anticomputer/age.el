@@ -567,7 +567,7 @@ If you are unsure, use synchronous version of this function
          (if (or age-always-use-default-keys
                  (y-or-n-p "Use default identity? "))
              age-default-identity
-           (read-file-name "Path to identity: " (expand-file-name "~/")))))
+           (expand-file-name (read-file-name "Path to identity: " (expand-file-name "~/"))))))
     (age--start context (list "--decrypt" "--identity" identity "--" (age-data-file cipher)))))
 
 (defun age--check-error-for-decrypt (context)
@@ -1061,15 +1061,16 @@ encryption is used."
 (defvar age-armor t
   "Controls whether or not Age encrypted files will be ASCII armored.")
 
-;; XXX lazy hacks abound, clean this up
 (defun age-select-keys (_context _msg &optional recipients)
   ;; file mode
   (let* ((selected-recipients
-          (if (or age-always-use-default-keys
-                  (y-or-n-p "Use default recipient(s)? "))
-              age-default-recipient
-            (read-file-name "Path to recipient(s): " (expand-file-name "~/")))))
-    ;; make sure this is buffer-local
+          ;; use age-file-encrypt-to if it's set, so we don't repeat the nag each save
+          (cond (age-file-encrypt-to age-file-encrypt-to)
+                ((or age-always-use-default-keys (y-or-n-p "Use default recipient(s)? "))
+                 age-default-recipient)
+                (t (expand-file-name (read-file-name "Path to recipient(s): "
+                                                     (expand-file-name "~/")))))))
+    ;; make sure this is buffer-local, after its set the first time, reuse it
     (setq-local age-file-encrypt-to
                 (cond ((listp selected-recipients) (append recipients selected-recipients))
                       (t (append recipients (list selected-recipients)))))))
