@@ -68,6 +68,8 @@ operation in emacs.
 
 * Known issues
 
+** Lack of pinentry support in age
+
 The age CLI does not support pinentry by design. Users are encouraged
 to use identity (private) keys and recipient (public) keys, and manage
 those secrets outside of Emacs accordingly. As such age.el does not
@@ -96,6 +98,40 @@ look like:
 You will now be able to use passphrase protected ssh keys as well:
 
 #+html:<p align="center"><img src="img/emacs-rage.png"/></p>
+
+** Direct use of passphrase encrypted age files
+
+NOTE: by default you _CAN_ use passphrase encrypted age files as identities
+and this will work just fine with e.g. rage + pinentry. This issue is for when
+you want to _directly_ open/save passphrase encrypted age files outside of the
+identity based pinentry use case.
+
+age.el does not encourage the use of passphrase encrypted files as anything
+but an identity container, however, if you want to open/save passphrase
+encrypted age files, you may do so by employing the following letf bindings to
+provide yourself with functions that enable direct passphrase support in
+age.el.
+
+Note that this requires you to use rage, or another age-spec compliant client
+that supports pinentry.
+
+#+begin_src emacs-lisp
+(defun my/age-open-with-passphrase (file)
+  (interactive "fPassphrase encrypted age file: ")
+  (cl-letf (((symbol-value 'age-default-identity) nil)
+            ((symbol-value 'age-default-recipient) nil))
+    (find-file file)))
+
+(defun my/age-save-with-passphrase ()
+  (interactive)
+  (cl-letf (((symbol-value 'age-default-identity) nil)
+            ((symbol-value 'age-default-recipient) nil))
+    (save-buffer)))
+#+end_src
+
+Binding age-default-identity and age-default-recipient to nil temporarily
+enables passphrase mode on age.el, and the above functions allow you to open,
+edit, and save passphrase encrypted age files.
 
 * Disclaimer
 
