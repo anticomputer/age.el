@@ -96,7 +96,10 @@ This file can contain multiple recipients, one per line.
 This variable can be a string representing a public key, a file path
 to a collection of public keys, or a list with a mix of both.
 
-By default it is a file path."
+By default it is a file path.
+
+A nil value indicates that you want to use passphrase encryption only.
+This is mostly provided for let-binding convenience."
   :type 'file)
 
 ;; XXX: we need to figure out an age pinentry for ssh passphrases
@@ -106,7 +109,10 @@ By default it is a file path."
 This file can contain multiple identities, one per line.
 
 This variable can be a file path to a collection of private keys, or
-a list of file paths to collections of private keys."
+a list of file paths to collections of private keys.
+
+A nil value indicates that you want to use passphrase decryption only.
+This is mostly provided for let-binding convenience."
   :type 'file)
 
 (defcustom age-always-use-default-keys t
@@ -568,23 +574,26 @@ If you are unsure, use synchronous version of this function
   (setf (age-context-operation context) 'decrypt)
   (setf (age-context-result context) nil)
   (let ((identity
-         (if (or age-always-use-default-keys
-                 (y-or-n-p "Use default identity? "))
-             age-default-identity
-           (expand-file-name (read-file-name "Path to identity: " (expand-file-name "~/"))))))
+         ;; only nag if we're not in passphrase mode
+         (when age-default-identity
+           (if (or age-always-use-default-keys
+                   (y-or-n-p "Use default identity? "))
+               age-default-identity
+             (expand-file-name (read-file-name "Path to identity: " (expand-file-name "~/")))))))
     (age--start context
                 (append '("--decrypt")
-                        ;; identity may be a list of identities
-                        (if (listp identity)
-                            (apply #'nconc
-			           (mapcar
-			            (lambda (id)
-                                      (when age-debug
-                                        (message "Adding id: %s" id))
-                                      (when (file-exists-p (expand-file-name id))
-                                        (list "-i" (expand-file-name id))))
-			            identity))
-                          (list "-i" (expand-file-name identity)))
+                        ;; identity may be a list of identities, skip in passphrase mode
+                        (if age-default-identity
+                            (if (listp identity)
+                                (apply #'nconc
+			               (mapcar
+			                (lambda (id)
+                                          (when age-debug
+                                            (message "Adding id: %s" id))
+                                          (when (file-exists-p (expand-file-name id))
+                                            (list "-i" (expand-file-name id))))
+			                identity))
+                              (list "-i" (expand-file-name identity))))
                         (list "--" (age-data-file cipher))))))
 
 (defun age--check-error-for-decrypt (context)
@@ -642,28 +651,35 @@ If you are unsure, use synchronous version of this function
   (setf (age-context-operation context) 'encrypt)
   (setf (age-context-result context) nil)
   ;; XXX: fixme ... we _ALWAYS_ need recipients
-  (let ((recipients (or recipients
-                        (age-select-keys
-                         context
-                         "Select recipients for encryption."))))
+  (let ((recipients
+         ;; ... unless we're in passphrase mode :P
+         (when age-default-recipient
+           (or recipients
+               (age-select-keys
+                context
+                "Select recipients for encryption.")))))
     (age--start context
                 ;; if recipients is nil, we go to the default identity
 	        (append '("--encrypt")
-		        (apply #'nconc
-			       (mapcar
-			        (lambda (recipient)
-                                  ;; recipients is a list of age public keys
-                                  (when age-debug
-                                    (message "Adding recipient: %s" recipient))
-                                  (if (file-exists-p (expand-file-name recipient))
-                                      (progn
+                        ;; only add recipients if we're not in passphrase mode
+                        (if age-default-recipient
+		            (apply #'nconc
+			           (mapcar
+			            (lambda (recipient)
+                                      ;; recipients is a list of age public keys
+                                      (when age-debug
+                                        (message "Adding recipient: %s" recipient))
+                                      (if (file-exists-p (expand-file-name recipient))
+                                          (progn
+                                            (when age-debug
+                                              (message "Adding file based recipient(s)."))
+                                            (list "-R" (expand-file-name recipient)))
                                         (when age-debug
-                                          (message "Adding file based recipient(s)."))
-                                        (list "-R" (expand-file-name recipient)))
-                                    (when age-debug
-                                      (message "Adding string based recipient."))
-			            (list "-r" recipient)))
-			        recipients))
+                                          (message "Adding string based recipient."))
+			                (list "-r" recipient)))
+			            recipients))
+                          ;; passphrase mode, requires rage for pinentry support
+                          (list "-p"))
 		        (if (age-data-file plain)
 			    (list "--" (age-data-file plain))))))
   (when (age-data-string plain)
