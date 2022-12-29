@@ -20,14 +20,14 @@ files can support in Emacs, e.g. ~.authinfo.age~ should work fine as well.
 
 Put age.el somewhere in your load-path and:
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (require 'age)
 (age-file-enable)
 #+end_src
 
 If you prefer to use ~use-package~, my quelpa configuration looks like:
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (use-package age
   :quelpa (age :fetcher github :repo "anticomputer/age.el")
   :ensure t
@@ -73,6 +73,29 @@ to use identity (private) keys and recipient (public) keys, and manage
 those secrets outside of Emacs accordingly. As such age.el does not
 currently support passphrase based age Encryption/Decryption as we
 do not have a tty available to provide a passphrase to age (I think).
+
+You can work around this by using [[https://github.com/str4d/rage][rage]] instead of age, which is a Rust
+based implementation of the [[https://github.com/C2SP/C2SP/blob/main/age.md][Age spec]] and which does support pinentry by
+default and age.el will work with rage as well. An example rage config may
+look like:
+
+#+begin_src emacs-lisp
+(use-package age
+  :quelpa (age :fetcher github :repo "anticomputer/age.el" :branch "scratch")
+  :ensure t
+  :demand
+  :custom
+  ;; use rage for pinentry, note this _has_ to go through customize
+  (age-program "rage")
+  (age-default-identity "~/.ssh/id_rsa")
+  (age-default-recipient "~/.ssh/id_rsa.pub")
+  :config
+  (age-file-enable))
+#+end_src
+
+You will now be able to use passphrase protected ssh keys as well:
+
+#+html:<p align="center"><img src="img/emacs-rage.png"/></p>
 
 * Disclaimer
 
