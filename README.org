@@ -1,4 +1,4 @@
-* age.el: transparent encryption/decryption for Age files in Emacs
+* age.el: transparent Age encryption/decryption for Emacs
 
 age.el is intended to provide transparent Age[1] based file encryption
 and decryption in Emacs. As such age.el does not support all
