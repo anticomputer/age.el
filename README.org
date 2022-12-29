@@ -25,6 +25,17 @@ Put age.el somewhere in your load-path and:
 (age-file-enable)
 #+end_src
 
+If you prefer to use ~use-package~, my quelpa configuration looks like:
+
+#+begin_src elisp
+(use-package age
+  :quelpa (age :fetcher github :repo "anticomputer/age.el")
+  :ensure t
+  :demand
+  :config
+  (age-file-enable))
+#+end_src
+
 You can now open, edit, and save age encryted files from Emacs as
 long as they contain the .age extension.
 
@@ -44,6 +55,16 @@ by default and decrypted with an identity of ~.ssh/id_rsa~ by default.
 
 You can customize the default key values via ~age-default-recipient~ and
 ~age-default-identity~, respectively.
+
+age.el tries to remain composable with the core philosophy of age itself
+and as such does not try to provide a kitchen sink worth of features.
+
+For example, you can use something like [[https://github.com/str4d/age-plugin-yubikey][age-plugin-yubikey]] to keep your
+age key material on a yubikey. See [[https://words.filippo.io/dispatches/passage/][this blog post]] by the age author on
+an example configuration. You could then use these yubikey based age
+identities and recipients as your default recipients and identities for
+age.el and as a result have e.g. a touch requirement for every decryption
+operation in emacs.
 
 * Known issues
 
