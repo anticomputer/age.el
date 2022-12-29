@@ -81,7 +81,7 @@ look like:
 
 #+begin_src emacs-lisp
 (use-package age
-  :quelpa (age :fetcher github :repo "anticomputer/age.el" :branch "scratch")
+  :quelpa (age :fetcher github :repo "anticomputer/age.el")
   :ensure t
   :demand
   :custom
