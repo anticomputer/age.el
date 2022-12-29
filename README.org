@@ -1,0 +1,65 @@
+* age.el: transparent encryption/decryption for Age files in Emacs
+
+age.el is intended to provide transparent Age[1] based file encryption
+and decryption in Emacs. As such age.el does not support all
+Age CLI based use cases. Rather age.el assumes you have configured
+a default identity and a default recipient, e.g. based off your
+ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
+is the default setting.
+
+The main use case is for folks who like to e.g. encrypt their org
+notes and things of that nature. Since age.el provides is a direct
+port from EPG/EPA it can support all roles that .gpg files can
+support in Emacs, e.g. ~/.authinfo.age should work fine as well.
+
+[1]: https://github.com/FiloSottile/age
+
+* Usage
+
+Put age.el somewhere in your load-path and:
+
+#+begin_src elisp
+(require 'age)
+(age-file-enable)
+#+end_src
+
+age.el also supports creating new .age files through find-file and
+they will be encrypted to your default recipient on first save.
+
+* Known issues
+
+The Age CLI does not support pinentry by design. Users are encouraged
+to use identity (private) keys and recipient (public) keys, and manage
+those secrets outside of Emacs accordingly. As such age.el does not
+currently support passphrase based Age Encryption/Decryption as we
+do not have a tty available to provide a passphrase to Age (I think).
+
+* Disclaimer
+
+This is experimental software and subject to heavy feature iterations.
+
+* Copyright
+
+This code was ported from the existing EPA and EPG Emacs code and as such
+their original copyright applies:
+
+;; Copyright (C) 1999-2000, 2002-2022 Free Software Foundation, Inc.
+
+;; Author: Daiki Ueno <ueno@unixuser.org>
+;; Keywords: emacs
+;; Version: 1.0.0
+
+;; This file is part of GNU Emacs.
+
+;; GNU Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; GNU Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
