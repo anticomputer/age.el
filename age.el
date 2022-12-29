@@ -91,9 +91,15 @@
 (defcustom age-default-recipient (expand-file-name "~/.ssh/id_rsa.pub")
   "Default recipient to use for age (public key).
 
-This file can contain multiple recipients, one per line."
+This file can contain multiple recipients, one per line.
+
+This variable can be a string representing a public key, a file path
+to a collection of public keys, or a list with a mix of both.
+
+By default it is a file path."
   :type 'file)
 
+;; XXX: we need to figure out an age pinentry for ssh passphrases
 (defcustom age-default-identity (expand-file-name "~/.ssh/id_rsa")
   "Default identity to use for age (private key).
 
@@ -199,13 +205,14 @@ version requirement is met."
 
 ;; Create an `age-configuration' object for `age', using PROGRAM.
 (defun age-config--make-age-configuration (program)
-  (list (cons 'program program)
-        (cons 'version
-              ;; XXX: clean this up
-              (substring
-               (shell-command-to-string
-                (format "%s --version" program))
-               0 -1))))
+  ;; deal with variance in age versioning, some have vX.X.X some have X.X.X
+  ;; e.g. macports has v1.0.0 and nixos has 1.0.0
+  (let ((version
+         (let ((v (shell-command-to-string (format "%s --version" program))))
+           (when (string-match "v*\\(.*\\)?\n" v)
+             (match-string 1 v)))))
+    (list (cons 'program program)
+          (cons 'version version))))
 
 ;;;###autoload
 (defun age-configuration ()
@@ -279,7 +286,6 @@ that version or higher is installed."
   (string nil :read-only t))
 
 ;;;; Context Struct
-(declare-function age-passphrase-callback-function "age-mode.el")
 
 (cl-defstruct (age-context
                (:constructor nil)
@@ -418,7 +424,7 @@ question, and the callback data (if any)."
 				    :noquery t))))
     (setf (age-context-process context) process)))
 
-(defun age--process-stdout-filter (process input)
+(defun age--process-stdout-filter (_process input)
   (message "debug: age stdout: %s" input))
 
 (defun age--process-stderr-filter (process input)
@@ -431,13 +437,13 @@ question, and the callback data (if any)."
   (when (buffer-live-p (process-buffer process))
     (with-current-buffer (process-buffer process)
       (unless age-process-filter-running
-        (let ((age-process-filter-running t)))
-        (string-match "age: error: \\(.*\\)" input)
-        (let ((error-msg (match-string 1 input)))
-          (when error-msg
-            ;; age-context is buffer local
-            (age-context-set-result-for age-context 'error `((age-error ,error-msg)))
-            (age--status-AGE_FAILED age-context error-msg)))))))
+        (let ((age-process-filter-running t))
+          (string-match "age: error: \\(.*\\)" input)
+          (let ((error-msg (match-string 1 input)))
+            (when error-msg
+              ;; age-context is buffer local
+              (age-context-set-result-for age-context 'error `((age-error ,error-msg)))
+              (age--status-AGE_FAILED age-context error-msg))))))))
 
 (defun age-read-output (context)
   "Read the output file CONTEXT and return the content as a string."
@@ -632,7 +638,14 @@ If you are unsure, use synchronous version of this function
                                   ;; recipients is a list of age public keys
                                   (when age-debug
                                     (message "Adding recipient: %s" recipient))
-			          (list "-r" recipient))
+                                  (if (file-exists-p (expand-file-name recipient))
+                                      (progn
+                                        (when age-debug
+                                          (message "Adding file based recipient(s)."))
+                                        (list "-R" (expand-file-name recipient)))
+                                    (when age-debug
+                                      (message "Adding string based recipient."))
+			            (list "-r" recipient)))
 			        recipients))
 		        (if (age-data-file plain)
 			    (list "--" (age-data-file plain))))))
@@ -786,11 +799,11 @@ May either be a string or a list of strings.")
   ;;:initialize 'custom-initialize-delay
   (setq file-name-handler-alist (delq age-file-handler file-name-handler-alist))
   (remove-hook 'find-file-hook #'age-file-find-file-hook)
-  (setq auto-mode-alist (delq age-file-auto-mode-alist-entry))
+  (setq auto-mode-alist (delq age-file-auto-mode-alist-entry auto-mode-alist))
   (when age-encryption-mode
     (setq file-name-handler-alist (cons age-file-handler file-name-handler-alist))
     (add-hook 'find-file-hook 'age-file-find-file-hook)
-    (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto))))
+    (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))))
 
 (put 'age-file-handler 'safe-magic t)
 (put 'age-file-handler 'operations '(write-region insert-file-contents))
@@ -831,7 +844,7 @@ encryption is used."
    (eq (age-context-operation context) 'encrypt)))
 
 ;; XXX: fixme when we have a pinentry available
-(defun age-file-passphrase-callback-function (context key-id file)
+(defun age-file-passphrase-callback-function (context _key-id file)
   (if age-file-cache-passphrase-for-symmetric-encryption
       (progn
         (setq file (file-truename file))
@@ -1049,29 +1062,17 @@ encryption is used."
   "Controls whether or not Age encrypted files will be ASCII armored.")
 
 ;; XXX lazy hacks abound, clean this up
-(defun age-select-keys (context msg &optional recipients)
+(defun age-select-keys (_context _msg &optional recipients)
   ;; file mode
-  (let* ((recipients-file
+  (let* ((selected-recipients
           (if (or age-always-use-default-keys
-                  (y-or-n-p "Use default recipient? "))
+                  (y-or-n-p "Use default recipient(s)? "))
               age-default-recipient
-            (read-file-name "Path to recipient: " (expand-file-name "~/"))))
-         ;; XXX: kludge, fixme
-         (recipients
-          (or recipients
-              (cl-loop
-               for recipient in
-               (remove ""
-                       (split-string
-                        (with-temp-buffer
-                          (insert-file-contents
-                           (expand-file-name recipients-file))
-                          (buffer-string))
-                        "\n"))
-               unless (string-match-p "^#" recipient)
-               collect recipient))))
+            (read-file-name "Path to recipient(s): " (expand-file-name "~/")))))
     ;; make sure this is buffer-local
-    (setq-local age-file-encrypt-to recipients)))
+    (setq-local age-file-encrypt-to
+                (cond ((listp selected-recipients) (append recipients selected-recipients))
+                      (t (append recipients (list selected-recipients)))))))
 
 (defun age-file-write-region (start end file &optional append visit lockname mustbenew)
   (if append
