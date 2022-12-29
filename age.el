@@ -143,6 +143,7 @@ a list of file paths to collections of private keys."
 (defconst age-config--program-alist
   `((Age
      age-program
+     ("rage" . "0.9.0")
      ("age" . ,age-minimum-version)))
   "Alist used to obtain the usable configuration of executables.
 The first element of each entry is protocol symbol, which is
@@ -212,7 +213,7 @@ version requirement is met."
   ;; e.g. macports has v1.0.0 and nixos has 1.0.0
   (let ((version
          (let ((v (shell-command-to-string (format "%s --version" program))))
-           (when (string-match "v*\\(.*\\)?\n*" v)
+           (when (string-match "^[v|rage ]*\\(.*\\)?\n*" v)
              (match-string 1 v)))))
     (list (cons 'program program)
           (cons 'version version))))
