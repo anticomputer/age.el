@@ -103,7 +103,10 @@ By default it is a file path."
 (defcustom age-default-identity (expand-file-name "~/.ssh/id_rsa")
   "Default identity to use for age (private key).
 
-This file can contain multiple identities, one per line."
+This file can contain multiple identities, one per line.
+
+This variable can be a file path to a collection of private keys, or
+a list of file paths to collections of private keys."
   :type 'file)
 
 (defcustom age-always-use-default-keys t
@@ -568,7 +571,20 @@ If you are unsure, use synchronous version of this function
                  (y-or-n-p "Use default identity? "))
              age-default-identity
            (expand-file-name (read-file-name "Path to identity: " (expand-file-name "~/"))))))
-    (age--start context (list "--decrypt" "--identity" identity "--" (age-data-file cipher)))))
+    (age--start context
+                (append '("--decrypt")
+                        ;; identity may be a list of identities
+                        (if (listp identity)
+                            (apply #'nconc
+			           (mapcar
+			            (lambda (id)
+                                      (when age-debug
+                                        (message "Adding id: %s" id))
+                                      (when (file-exists-p (expand-file-name id))
+                                        (list "-i" (expand-file-name id))))
+			            identity))
+                          (list "-i" (expand-file-name identity)))
+                        (list "--" (age-data-file cipher))))))
 
 (defun age--check-error-for-decrypt (context)
   (let ((errors (age-context-result-for context 'error)))
