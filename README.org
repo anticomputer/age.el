@@ -1,8 +1,8 @@
-* age.el: transparent Age encryption/decryption
+* age.el: transparent age encryption/decryption
 
-age.el is intended to provide transparent Age[1] based file encryption
+age.el is intended to provide transparent age[1] based file encryption
 and decryption in Emacs. As such age.el does not support all
-Age CLI based use cases. Rather age.el assumes you have configured
+age CLI based use cases. Rather age.el assumes you have configured
 a default identity and a default recipient, e.g. based off your
 ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
 is the default setting.
@@ -23,7 +23,7 @@ Put age.el somewhere in your load-path and:
 (age-file-enable)
 #+end_src
 
-You can now open, edit, and save Age encryted files from Emacs as
+You can now open, edit, and save age encryted files from Emacs as
 long as they contain the .age extension.
 
 age.el also supports creating new .age files through find-file and
@@ -36,20 +36,20 @@ M-x find-file RET /tmp/test.age RET
 M-x save-buffer RET
 #+end_src
 
-Will create an Age encrypted file named test.age in the /tmp
-directory. It will be encrypted to a recipient of ~/.ssh/id_rsa.pub
-by default and decrypted with an identity of ~/.ssh/id_rsa by default.
+Will create an age encrypted file named test.age in the ~/tmp~
+directory. It will be encrypted to a recipient of ~~/.ssh/id_rsa.pub~
+by default and decrypted with an identity of ~~/.ssh/id_rsa~ by default.
 
-You can customize the default key values via age-default-recipient and
-age-default-identity, respectively.
+You can customize the default key values via ~age-default-recipient~ and
+~age-default-identity~, respectively.
 
 * Known issues
 
-The Age CLI does not support pinentry by design. Users are encouraged
+The age CLI does not support pinentry by design. Users are encouraged
 to use identity (private) keys and recipient (public) keys, and manage
 those secrets outside of Emacs accordingly. As such age.el does not
-currently support passphrase based Age Encryption/Decryption as we
-do not have a tty available to provide a passphrase to Age (I think).
+currently support passphrase based age Encryption/Decryption as we
+do not have a tty available to provide a passphrase to age (I think).
 
 * Disclaimer
 
