@@ -1,16 +1,18 @@
 * age.el: transparent age encryption/decryption
 
+#+html:<p align="center"><img src="img/emacs-age.png"/></p>
+
 age.el is intended to provide transparent age[1] based file encryption
 and decryption in Emacs. As such age.el does not support all
 age CLI based use cases. Rather age.el assumes you have configured
 a default identity and a default recipient, e.g. based off your
-ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
+ssh private key and ssh public key in ~.ssh/id_rsa[.pub]~, which
 is the default setting.
 
 The main use case is for folks who like to e.g. encrypt their Org
 notes and things of that nature. Since age.el provides a direct
 port of EPG/EPA functionality it can support all roles that .gpg
-files can support in Emacs, e.g. ~/.authinfo.age should work fine as well.
+files can support in Emacs, e.g. ~.authinfo.age~ should work fine as well.
 
 [1]: https://github.com/FiloSottile/age
 
@@ -37,8 +39,8 @@ M-x save-buffer RET
 #+end_src
 
 Will create an age encrypted file named test.age in the ~/tmp~
-directory. It will be encrypted to a recipient of ~~/.ssh/id_rsa.pub~
-by default and decrypted with an identity of ~~/.ssh/id_rsa~ by default.
+directory. It will be encrypted to a recipient of ~.ssh/id_rsa.pub~
+by default and decrypted with an identity of ~.ssh/id_rsa~ by default.
 
 You can customize the default key values via ~age-default-recipient~ and
 ~age-default-identity~, respectively.
