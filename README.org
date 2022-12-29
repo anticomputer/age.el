@@ -23,8 +23,25 @@ Put age.el somewhere in your load-path and:
 (age-file-enable)
 #+end_src
 
+You can now open, edit, and save Age encryted files from Emacs as
+long as they contain the .age extension.
+
 age.el also supports creating new .age files through find-file and
 they will be encrypted to your default recipient on first save.
+
+Example:
+
+#+begin_src
+M-x find-file RET /tmp/test.age RET
+M-x save-buffer RET
+#+end_src
+
+Will create an Age encrypted file named test.age in the /tmp
+directory. It will be encrypted to a recipient of ~/.ssh/id_rsa.pub
+by default and decrypted with an identity of ~/.ssh/id_rsa by default.
+
+You can customize the default key values via age-default-recipient and
+age-default-identity, respectively.
 
 * Known issues
 
