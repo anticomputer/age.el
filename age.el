@@ -442,7 +442,7 @@ question, and the callback data (if any)."
     (with-current-buffer (process-buffer process)
       (unless age-process-filter-running
         (let ((age-process-filter-running t))
-          (string-match "age: error: \\(.*\\)" input)
+          (string-match "[age: error:|Error:] \\(.*\\)" input)
           (let ((error-msg (match-string 1 input)))
             (when error-msg
               ;; age-context is buffer local
