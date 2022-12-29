@@ -1,4 +1,4 @@
-* age.el: transparent Age encryption/decryption for Emacs
+* age.el: transparent Age encryption/decryption
 
 age.el is intended to provide transparent Age[1] based file encryption
 and decryption in Emacs. As such age.el does not support all
@@ -7,10 +7,10 @@ a default identity and a default recipient, e.g. based off your
 ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
 is the default setting.
 
-The main use case is for folks who like to e.g. encrypt their org
-notes and things of that nature. Since age.el provides is a direct
-port from EPG/EPA it can support all roles that .gpg files can
-support in Emacs, e.g. ~/.authinfo.age should work fine as well.
+The main use case is for folks who like to e.g. encrypt their Org
+notes and things of that nature. Since age.el provides a direct
+port of EPG/EPA functionality it can support all roles that .gpg
+files can support in Emacs, e.g. ~/.authinfo.age should work fine as well.
 
 [1]: https://github.com/FiloSottile/age
 
