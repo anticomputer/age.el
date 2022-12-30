@@ -173,6 +173,8 @@ those secrets outside of Emacs accordingly. As such age.el does not
 currently support passphrase based age Encryption/Decryption as we
 do not have a tty available to provide a passphrase to age (I think).
 
+*** Workaround: Pinentry support through rage
+
 You can work around this by using [[https://github.com/str4d/rage][rage]] instead of age, which is a Rust
 based implementation of the [[https://github.com/C2SP/C2SP/blob/main/age.md][Age spec]] and which does support pinentry by
 default and age.el will work with rage as well. An example rage config may
@@ -195,6 +197,28 @@ look like:
 You will now be able to use passphrase protected ssh keys as well:
 
 #+html:<p align="center"><img src="img/emacs-rage.png"/></p>
+
+*** Tip: configuring pinentry-emacs for minibuffer passphrase entry
+
+If you'd like to keep your pinentry support inside of emacs entirely for
+whatever reason, you can use ~pinentry-emacs~ for a ~pinentry-program~ that
+will prompt you inside of emacs. Most distributions have a package for
+~pinentry-emacs~ available, which provides a pinentry executable.
+
+If not, you can find the GNU pinentry collection, which contains the emacs
+flavor of pinentry as well [[https://git.gnupg.org/cgi-bin/gitweb.cgi?p=pinentry.git][here]].
+
+Note that you'll also want to ensure the emacs pinentry socket actually exists
+and is running by using the GNU ELPA [[https://elpa.gnu.org/packages/pinentry.html][pinentry]] package:
+
+#+begin_src emacs-lisp
+(use-package pinentry
+  :config
+  (pinentry-start))
+#+end_src
+
+With both of those requirements satisfied, rage will use ~pinentry-emacs~ to
+prompt you for passphrases in the minibuffer. 
 
 ** Direct use of passphrase encrypted age files
 
