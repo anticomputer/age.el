@@ -134,6 +134,35 @@ https://patch-diff.githubusercontent.com/raw/org-roam/org-roam/pull/2302.patch
 This patch enables ~.org.age~ discoverability in ~org-roam~ and beyond that
 everything just works the same as you're used to with ~.org.gpg~ files.
 
+* Other fun examples
+
+** Encrypting a file to a given GitHub username's ssh keys
+
+#+begin_src emacs-lisp
+(defun my/age-github-keys-for (username)
+  "Turn GitHub USERNAME into a list of ssh public keys."
+  (let* ((res (shell-command-to-string
+               (format "curl -s https://api.github.com/users/%s/keys"
+                       (shell-quote-argument username))))
+         (json (json-parse-string res :object-type 'alist)))
+    (cl-assert (arrayp json))
+    (cl-loop for alist across json
+             for key = (cdr (assoc 'key alist))
+             when (and (stringp key)
+                       (string-match-p "^\\(ssh-rsa\\|ssh-ed25519\\) AAAA" key))
+             collect key)))
+
+(defun my/age-save-with-github-recipient (username)
+  "Encrypt an age file to the public keys of GitHub USERNAME."
+  (interactive "MGitHub username: ")
+  (cl-letf (((symbol-value 'age-default-recipient)
+             (append (if (listp age-default-recipient)
+                         age-default-recipient
+                       (list age-default-recipient))
+                     (my/age-github-keys-for username))))
+    (save-buffer)))
+#+end_src
+
 * Known issues
 
 ** Lack of pinentry support in age
