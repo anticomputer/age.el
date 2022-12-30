@@ -1,4 +1,4 @@
-* age.el: transparent age encryption/decryption
+* age.el: age encryption support for Emacs
 
 #+html:<p align="center"><img src="img/emacs-age.png"/></p>
 
@@ -25,7 +25,7 @@ Put age.el somewhere in your load-path and:
 (age-file-enable)
 #+end_src
 
-If you prefer to use ~use-package~, my quelpa configuration looks like:
+If you prefer to use ~use-package~, a quelpa configuration looks like:
 
 #+begin_src emacs-lisp
 (use-package age
@@ -65,6 +65,74 @@ an example configuration. You could then use these yubikey based age
 identities and recipients as your default recipients and identities for
 age.el and as a result have e.g. a touch requirement for every decryption
 operation in emacs.
+
+* Example configuration
+
+You can find my current configuration for age.el below. I am using
+[[https://github.com/str4d/age-plugin-yubikey][age-yubikey-plugin]] to supply an age identity off of a yubikey PIV slot. The
+slot is configured to require a touch (with a 15 second cache) for every age
+client query against the identity stored in that slot.
+
+This means that every age.el decrypt requires a physical touch for
+confirmation. The cache makes it such that e.g. decrypting a series of age
+encrypted org files in sequence only requires a single touch confirmation.
+
+This limits the amount of actively accessible encrypted data inside Emacs to
+only the things I physically confirm, and only for 15 second windows, but
+without having to type a passphrase at any point. This excludes any open
+buffers that have decrypted data in memory of course.
+
+The key scheme I employ encrypts against the public keys of two main
+identities. My aforementioned yubikey identity as well as a disaster recovery
+identity, who's private key is passphrase encrypted and kept in cold storage.
+
+You'll note that I've set ~age-default-identity~ and ~age-default-recipient~
+to be lists. These two variables can be file paths, key strings, or lists that
+contain a mix of both. This allows you to easily encrypt to a series of
+identities in whatever way you choose to store and manage them.
+
+Note that I'm using [[https://github.com/str4d/rage][rage]] as opposed to [[https://github.com/FiloSottile/age][age]] as my age client. This is due the
+aforementioned lack of pinentry support in the reference age implemention,
+which rage does support.
+
+#+begin_src emacs-lisp
+(use-package age
+  :quelpa (age :fetcher github :repo "anticomputer/age.el")
+  :ensure t
+  :demand
+  :custom
+  ;; use rage for pinentry, note this _has_ to go through customize
+  (age-program "rage")
+  (age-default-identity "~/.ssh/age_yubikey")
+  (age-default-recipient
+   '("~/.ssh/age_yubikey.pub"
+     "~/.ssh/age_recovery.pub"))
+  :config
+  ;; bind identity and recipient to nil for temporary passphrase mode
+  (defun my/age-open-with-passphrase (file)
+    (interactive "fPassphrase encrypted age file: ")
+    (cl-letf (((symbol-value 'age-default-identity) nil)
+              ((symbol-value 'age-default-recipient) nil))
+      (find-file file)))
+
+  (defun my/age-save-with-passphrase ()
+    (interactive)
+    (cl-letf (((symbol-value 'age-default-identity) nil)
+              ((symbol-value 'age-default-recipient) nil))
+      (save-buffer)))
+
+  (age-file-enable))
+
+(provide 'my-age-init)
+#+end_src
+
+I use the above configuration in combination with a version of ~org-roam~ that
+has the following patches applied:
+
+https://patch-diff.githubusercontent.com/raw/org-roam/org-roam/pull/2302.patch
+
+This patch enables ~.org.age~ discoverability in ~org-roam~ and beyond that
+everything just works the same as you're used to with ~.org.gpg~ files.
 
 * Known issues
 
@@ -151,6 +219,57 @@ I am using org-roam with .age encrypted files through age.el without issues.
 * Disclaimer
 
 This is experimental software and subject to heavy feature iterations.
+
+* Why age over gpg?
+
+This is, apparently, a heated topic and folks more qualified than me have
+commented on this in great detail over many years. The following blog posts I
+think provide a good summary of the state of the debate regarding the OpenPGP
+specification:
+
+- [[https://www.openbsd.org/papers/bsdcan-signify.html][signify: Securing OpenBSD From Us To You]]
+- [[https://latacora.micro.blog/2019/07/16/the-pgp-problem.html][The PGP Problem]]
+
+Thanks to reddit's ~/u/a-huge-waste-of-time~ for linking those references.
+
+In true megalomaniac fashion I'll [[https://www.reddit.com/r/emacs/comments/zyd7bh/comment/j25ag7s/?utm_source=share&utm_medium=web2x&context=3][quote myself]] out of the age.el ~/r/emacs~
+announcement thread when asked why I was looking to rid myself of gpg:
+
+#+begin_quote
+I wanted to reduce the amount of key management in my life to the bare
+minimum. I don't use gpg for its intended purpose (maintaining a web of trust
+with folks that you communicate with), but rather only use it for Emacs file
+encryption and things like password-store (which I'm replacing with
+https://github.com/FiloSottile/passage and will also port the Emacs pass
+frontend to work with).
+
+Age functions with ssh keys as well as its own key formats, so it hugely
+simplifies the amount of key material I have to maintain. Especially when
+managing key material on e.g. YubiKeys, maintaining Encryption,
+Authentication, and Signing subkeys and juggling what is essentially a
+personal PKI (not to mention bringing it along on every system) surrounding
+gpg's key trust relationship maintainance.
+
+I use e2e encrypted email and messaging services for encrypted communications
+and ssh keys to sign git commits.
+
+So with age I can also just use my ssh public key to encrypt and my ssh
+private key to decrypt my files. If I want to get fancy, I can use something
+like https://github.com/str4d/age-plugin-yubikey to provide the key material
+for my age operations (which should compose with age.el quite well also,
+i.e. you can have every decrypt operation have a touch requirement in Emacs
+that way).
+
+TL;DR: gpg is overly complex for my use case and I'm currently shoehorning gpg
+into a role it was never designed or intended to play. Complexity of use and
+secure use of cryptography don't compose well for most folks, so now that gpg
+no longer serves any real purpose in my environment, it's time to retire it
+from my dependency stack.
+#+end_quote
+
+Having said, age.el is not intended to encourage you to abandon gpg. However,
+if you've been looking for a lighter weight alternative for Emacs encryption,
+it might be a good fit for you.
 
 * Copyright
 
