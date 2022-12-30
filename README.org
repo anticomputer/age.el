@@ -267,9 +267,9 @@ no longer serves any real purpose in my environment, it's time to retire it
 from my dependency stack.
 #+end_quote
 
-Having said, age.el is not intended to encourage you to abandon gpg. However,
-if you've been looking for a lighter weight alternative for Emacs encryption,
-it might be a good fit for you.
+Having said that, age.el is not intended to encourage you to abandon
+gpg. However, if you've been looking for a lighter weight alternative for
+Emacs encryption, it might be a good fit for you.
 
 * Copyright
 
