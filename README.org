@@ -133,6 +133,21 @@ Binding age-default-identity and age-default-recipient to nil temporarily
 enables passphrase mode on age.el, and the above functions allow you to open,
 edit, and save passphrase encrypted age files.
 
+** org-roam does not support .age files
+
+A pull request to add age discoverability to org-roam is pending review at:
+https://github.com/org-roam/org-roam/pull/2302
+
+In the meantime you can use the following package recipe to build an org-roam
+version that supports age encrypted files:
+
+#+begin_src emacs-lisp
+(org-roam :fetcher github
+          :repo "anticomputer/org-roam" :branch "age-support")
+#+end_src
+
+I am using org-roam with .age encrypted files through age.el without issues.
+
 * Disclaimer
 
 This is experimental software and subject to heavy feature iterations.
