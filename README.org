@@ -59,13 +59,6 @@ You can customize the default key values via ~age-default-recipient~ and
 age.el tries to remain composable with the core philosophy of age itself
 and as such does not try to provide a kitchen sink worth of features.
 
-For example, you can use something like [[https://github.com/str4d/age-plugin-yubikey][age-plugin-yubikey]] to keep your
-age key material on a yubikey. See [[https://words.filippo.io/dispatches/passage/][this blog post]] by the age author on
-an example configuration. You could then use these yubikey based age
-identities and recipients as your default recipients and identities for
-age.el and as a result have e.g. a touch requirement for every decryption
-operation in emacs.
-
 * Example configuration
 
 You can find my current configuration for age.el below. I am using
@@ -173,7 +166,7 @@ those secrets outside of Emacs accordingly. As such age.el does not
 currently support passphrase based age Encryption/Decryption as we
 do not have a tty available to provide a passphrase to age (I think).
 
-*** Workaround: Pinentry support through rage
+*** Workaround: pinentry support through rage
 
 You can work around this by using [[https://github.com/str4d/rage][rage]] instead of age, which is a Rust
 based implementation of the [[https://github.com/C2SP/C2SP/blob/main/age.md][Age spec]] and which does support pinentry by
@@ -201,15 +194,21 @@ You will now be able to use passphrase protected ssh keys as well:
 *** Tip: configuring pinentry-emacs for minibuffer passphrase entry
 
 If you'd like to keep your pinentry support inside of emacs entirely for
-whatever reason, you can use ~pinentry-emacs~ for a ~pinentry-program~ that
-will prompt you inside of emacs. Most distributions have a package for
-~pinentry-emacs~ available, which provides a pinentry executable.
+whatever reason, you can use ~pinentry-emacs~ for a pinentry program that
+will prompt you inside of Emacs. Most distributions have a package for
+~pinentry-emacs~ available, which provides a GNU pinentry executable with the
+Emacs flavor enabled.
 
-If not, you can find the GNU pinentry collection, which contains the emacs
-flavor of pinentry as well [[https://git.gnupg.org/cgi-bin/gitweb.cgi?p=pinentry.git][here]].
+If your distribution does not provide an Emacs enabled build of GNU pinentry,
+you can find the GNU pinentry collection, which contains the Emacs flavor of
+pinentry as well [[https://git.gnupg.org/cgi-bin/gitweb.cgi?p=pinentry.git][here]].
 
-Note that you'll also want to ensure the emacs pinentry socket actually exists
-and is running by using the GNU ELPA [[https://elpa.gnu.org/packages/pinentry.html][pinentry]] package:
+Warning: don't confuse GNU pinentry with this [[https://github.com/ecraven/pinentry-emacs][pinentry-emacs shellscript]] they
+are not the same thing.
+
+Note: if you're saying =file not found= errors when trying to use ~pinentry~
+you'll also want to ensure the Emacs pinentry socket actually exists and is
+running by using the GNU ELPA [[https://elpa.gnu.org/packages/pinentry.html][pinentry]] package:
 
 #+begin_src emacs-lisp
 (use-package pinentry
