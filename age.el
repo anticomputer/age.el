@@ -310,6 +310,14 @@ or higher is installed."
 
 ;;;; Context Methods
 
+(cl-defmacro age-with-dev-shm (&body body)
+  "Bind temporary-file-directory to /dev/shm if it exists."
+  `(let ((temporary-file-directory
+          (if (file-directory-p "/dev/shm/")
+              "/dev/shm/"
+            ,temporary-file-directory)))
+     ,@body))
+
 ;; This is not an alias, just so we can mark it as autoloaded.
 ;;;###autoload
 (defun age-make-context (&optional protocol armor)
@@ -592,7 +600,7 @@ If PLAIN is nil, it returns the result as a string."
   (unwind-protect
       (progn
 	(setf (age-context-output-file context)
-              (or plain (make-temp-file "age-output")))
+              (or plain (age-with-dev-shm (make-temp-file "age-output"))))
         (age-start-decrypt context (age-make-data-from-file cipher))
         (age-wait-for-completion context)
 	(age--check-error-for-decrypt context)
@@ -604,13 +612,13 @@ If PLAIN is nil, it returns the result as a string."
 
 (defun age-decrypt-string (context cipher)
   "Decrypt a string CIPHER and return the plain text."
-  (let ((input-file (make-temp-file "age-input"))
+  (let ((input-file (age-with-dev-shm (make-temp-file "age-input")))
 	(coding-system-for-write 'binary))
     (unwind-protect
 	(progn
 	  (write-region cipher nil input-file nil 'quiet)
 	  (setf (age-context-output-file context)
-                (make-temp-file "age-output"))
+                (age-with-dev-shm (make-temp-file "age-output")))
 	  (age-start-decrypt context (age-make-data-from-file input-file))
 	  (age-wait-for-completion context)
 	  (age--check-error-for-decrypt context)
@@ -678,7 +686,7 @@ If RECIPIENTS is nil, it performs symmetric encryption."
   (unwind-protect
       (progn
         (setf (age-context-output-file context)
-              (or cipher (make-temp-file "age-output")))
+              (or cipher (age-with-dev-shm (make-temp-file "age-output"))))
 	(age-start-encrypt context (age-make-data-from-file plain) recipients)
 	(age-wait-for-completion context)
 	(let ((errors (age-context-result-for context 'error)))
@@ -697,12 +705,12 @@ If RECIPIENTS is nil, it performs symmetric encryption."
   (let ((input-file
          ;; XXX: this is always true, but keep the protocol flexibility for now
 	 (when (eq (age-context-protocol context) 'Age)
-	   (make-temp-file "age-input")))
+	   (age-with-dev-shm (make-temp-file "age-input"))))
 	(coding-system-for-write 'binary))
     (unwind-protect
 	(progn
 	  (setf (age-context-output-file context)
-                (make-temp-file "age-output"))
+                (age-with-dev-shm (make-temp-file "age-output")))
 	  (if input-file
 	      (write-region plain nil input-file nil 'quiet))
 	  (age-start-encrypt context
