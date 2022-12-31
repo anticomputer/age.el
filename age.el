@@ -6,7 +6,7 @@
 ;;        Bas Alberts <bas@anti.computer>
 ;;
 ;; Maintainer: Bas Alberts <bas@anti.computer>
-;; Package-Requires: (("emacs" "27.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: emacs
 ;; Version: 0.1
 
