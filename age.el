@@ -1,44 +1,16 @@
 ;;; age.el --- the Age Library -*- lexical-binding: t -*-
 
-;; EPG/EPA modified to work with Age*
-;;
-;; * https://github.com/FiloSottile/age
+;; EPG/EPA modified to work with Age: https://github.com/FiloSottile/age
 
+;; Author: Daiki Ueno <ueno@unixuser.org>
+;;        Bas Alberts <bas@anti.computer>
+;;
 ;; Maintainer: Bas Alberts <bas@anti.computer>
+;; Package-Requires: (("emacs" "27.1"))
 ;; Keywords: emacs
 ;; Version: 0.1
 
-;; This is intended to provide transparent Age based file encryption
-;; and decryption in Emacs. As such age.el does not support all
-;; Age CLI based use cases. Rather age.el assumes you have configured
-;; a default identity and a default recipient, e.g. based off your
-;; ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
-;; is the default setting.
-
-;; The main use case is for folks who like to e.g. encrypt their org
-;; notes and things of that nature. Since age.el provides is a direct
-;; port from EPG/EPA it can support all roles that .gpg files can
-;; support in Emacs, e.g. ~/.authinfo.age should work fine as well.
-
-;; Usage:
-;;
-;; Put age.el somewhere in your load-path and:
-;;
-;; (require 'age)
-;; (age-file-enable)
-;;
-;; age.el also supports creating new .age files through find-file and
-;; they will be encrypted to your default recipient on first save.
-
-;; Known issues:
-;;
-;; The Age CLI does not support pinentry by design. Users are encouraged
-;; to use identity (private) keys and recipient (public) keys, and manage
-;; those secrets outside of Emacs accordingly. As such age.el does not
-;; currently support passphrase based Age Encryption/Decryption as we
-;; do not have a tty available to provide a passphrase to Age (I think).
-
-;; Original copyright notice:
+;; This is a port of epg.el and epa-file.el, original copyright applies:
 
 ;; Copyright (C) 1999-2000, 2002-2022 Free Software Foundation, Inc.
 
@@ -63,7 +35,24 @@
 
 ;;; Commentary:
 
-;; This is just a reworked version of epg.el, so original copyright applies.
+;; age.el is intended to provide transparent Age based file encryption
+;; and decryption in Emacs. As such age.el does not support all
+;; Age CLI based use cases. Rather age.el assumes you have configured
+;; a default identity and a default recipient, e.g. based off your
+;; ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
+;; is the default setting.
+
+;; The main use case is for folks who like to e.g. encrypt their org
+;; notes and things of that nature. Since age.el provides is a direct
+;; port from EPG/EPA it can support all roles that .gpg files can
+;; support in Emacs, e.g. ~/.authinfo.age should work fine as well.
+
+;; Usage:
+;;
+;; Put age.el somewhere in your load-path and:
+;;
+;; (require 'age)
+;; (age-file-enable)
 
 ;;; Code:
 
@@ -84,7 +73,6 @@
 (defgroup age ()
   "Interface to Age."
   :tag "Age"
-  :version "27.1"
   :group 'data
   :group 'external)
 
@@ -102,7 +90,6 @@ A nil value indicates that you want to use passphrase encryption only.
 This is mostly provided for let-binding convenience."
   :type 'file)
 
-;; XXX: we need to figure out an age pinentry for ssh passphrases
 (defcustom age-default-identity (expand-file-name "~/.ssh/id_rsa")
   "Default identity to use for age (private key).
 
@@ -121,7 +108,6 @@ This is mostly provided for let-binding convenience."
 
 (defcustom age-program (executable-find "age")
   "Say what age program to prefer."
-  :version "27.1"
   :type 'string)
 
 (defcustom age-passphrase-coding-system nil
@@ -135,8 +121,7 @@ This is mostly provided for let-binding convenience."
   :type '(choice (const nil)
 		 (const ask)
 		 (const cancel)
-		 (const error))
-  :version "27.1")
+		 (const error)))
 
 (defcustom age-debug nil
   "If non-nil, debug output goes to the \"*age-debug*\" buffer."
@@ -254,9 +239,9 @@ a single minimum version string."
 
 (defun age-required-version-p (protocol required-version)
   "Verify a sufficient version of Age for specific protocol.
-PROTOCOL is `Age' or `CMS'.  REQUIRED-VERSION is a string
-containing the required version number.  Return non-nil if
-that version or higher is installed."
+PROTOCOL is `Age'.  REQUIRED-VERSION is a string containing
+the required version number.  Return non-nil if that version
+or higher is installed."
   (let ((version (cdr (assq 'version (age-find-configuration protocol)))))
     (and (stringp version)
          (version<= required-version version))))
@@ -319,7 +304,6 @@ that version or higher is installed."
   output-file
   result
   operation
-  ;; XXX: no pinentry mode on Age, waiting for a plugin
   (pinentry-mode age-pinentry-mode)
   (error-output "")
   error-buffer)
@@ -373,7 +357,7 @@ question, and the callback data (if any)."
    ((eq (car error) 'age-error)
     (cadr error))
    ;; XXX: give me a heads up if I'm not handling something yet
-   (t (message "XXX Translate this error: %s" error))))
+   (t (message "XXX: Translate this error: %s" error))))
 
 (defun age-errors-to-string (errors)
   (mapconcat #'age-error-to-string errors "; "))
@@ -448,7 +432,7 @@ question, and the callback data (if any)."
     (with-current-buffer (process-buffer process)
       (unless age-process-filter-running
         (let ((age-process-filter-running t))
-          (string-match "[age: error:|Error:] \\(.*\\)" input)
+          (string-match "\\(?:age: error:\\|Error:\\) \\(.*\\)" input)
           (let ((error-msg (match-string 1 input)))
             (when error-msg
               ;; age-context is buffer local
@@ -609,10 +593,8 @@ If PLAIN is nil, it returns the result as a string."
       (progn
 	(setf (age-context-output-file context)
               (or plain (make-temp-file "age-output")))
-        ;;(message "XXX: context: %s" context)
         (age-start-decrypt context (age-make-data-from-file cipher))
         (age-wait-for-completion context)
-        ;; XXX: replace this with a simpler error passing thing
 	(age--check-error-for-decrypt context)
         (unless plain
 	  (age-read-output context)))
@@ -1090,7 +1072,6 @@ encryption is used."
       (goto-char (point-max)))
     length))
 
-;; XXX: always armor for now, let bind this otherwise
 (defvar age-armor t
   "Controls whether or not Age encrypted files will be ASCII armored.")
 
