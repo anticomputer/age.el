@@ -156,6 +156,42 @@ everything just works the same as you're used to with ~.org.gpg~ files.
     (save-buffer)))
 #+end_src
 
+** Visual indicators of encryption and decryption in progress
+
+Since I use a yubikey touch controlled age identity I find it useful to have a
+visual indication of when age.el is performing operations that might require
+me to touch the yubikey. The following advice adds visual notifications to
+~age-start-decrypt~ and ~age-start-encrypt~.
+
+I'm also using this as a way to get a good feel for just how much Emacs is
+interacting with my encrypted data.
+
+#+begin_src emacs-lisp
+  (require 'notifications)
+
+  (defun my/age-notify (msg)
+    (cond ((eq system-type 'gnu/linux)
+           (notifications-notify
+            :title "age.el"
+            :body (format "%s" msg)
+            :urgency 'low
+            :timeout 800))
+          ((eq system-type 'darwin)
+           (do-applescript
+            (format "display notification \"%s\" with title \"age.el\"" msg)))
+          (t
+           (message (format "age.el: %s" msg)))))
+
+  (defun my/age-notify-decrypt (&rest args)
+    (my/age-notify "decrypt"))
+
+  (defun my/age-notify-encrypt (&rest args)
+    (my/age-notify "encrypt"))
+
+  (advice-add #'age-start-decrypt :before #'my/age-notify-decrypt)
+  (advice-add #'age-start-encrypt :before #'my/age-notify-encrypt)
+#+end_src
+
 * Known issues
 
 ** Lack of pinentry support in age
