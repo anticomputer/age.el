@@ -347,7 +347,7 @@ question, and the callback data (if any)."
 
 ;;; Functions
 
-(defun my/age-passphrase-encoded-p (file)
+(defun my/age-scrypt-p (file)
   "Check for passphrase scrypt stanza in age FILE."
   (with-temp-buffer
     (insert-file-contents-literally file nil 0 100)
@@ -359,7 +359,8 @@ question, and the callback data (if any)."
                             (line-beginning-position)
                             (line-end-position))
                       (forward-line 1)))))
-      (let ((b64 (string-match-p "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
+      (let ((b64 (string-match-p
+                  "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
             (l2 (cadr lines)))
         (when (string-match-p "-> scrypt "
                               (if b64 (base64-decode-string l2) l2))
