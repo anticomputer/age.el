@@ -347,7 +347,7 @@ question, and the callback data (if any)."
 
 ;;; Functions
 
-(defun my/age-passhrase-encoded-p (file)
+(defun my/age-passphrase-encoded-p (file)
   "Check for passphrase scrypt stanza in age FILE."
   (with-temp-buffer
     (insert-file-contents-literally file nil 0 100)
