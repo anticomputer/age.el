@@ -325,16 +325,6 @@ or higher is installed."
   "Return a context object."
   (age-context--make (or protocol 'Age) armor))
 
-(defun age-context-set-armor (context armor)
-  "Specify if the output should be ASCII armored in CONTEXT."
-  (declare (obsolete setf "25.1"))
-  (setf (age-context-armor context) armor))
-
-(defun age-context-set-passphrase (context passphrase)
-  "Specify if the file is in PASSPHRASE mode."
-  (declare (obsolete setf "25.1"))
-  (setf (age-context-passphrase context) passphrase))
-
 ;; XXX: unused currently, so... untested.
 (defun age-context-set-passphrase-callback (context
 					    passphrase-callback)
@@ -1011,7 +1001,7 @@ encryption is used."
 	 string length entry)
     (if visit
 	(setq buffer-file-name file))
-    (age-context-set-passphrase context (age-scrypt-p file))
+    (setf (age-context-passphrase context) (age-scrypt-p file))
     (age-context-set-passphrase-callback
      context
      (cons #'age-file-passphrase-callback-function
@@ -1148,7 +1138,7 @@ encryption is used."
 	   ((listp age-file-encrypt-to) age-file-encrypt-to)
 	   ((stringp age-file-encrypt-to) (list age-file-encrypt-to))))
 	 buffer)
-    (age-context-set-passphrase context (age-scrypt-p file))
+    (setf (age-context-passphrase context) (age-scrypt-p file))
     (age-context-set-passphrase-callback
      context
      (cons #'age-file-passphrase-callback-function
