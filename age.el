@@ -8,7 +8,7 @@
 ;; Maintainer: Bas Alberts <bas@anti.computer>
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: emacs
-;; Version: 0.1
+;; Version: 0.1.0
 
 ;; This is a port of epg.el and epa-file.el, original copyright applies:
 
