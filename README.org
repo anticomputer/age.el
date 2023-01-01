@@ -101,19 +101,6 @@ which rage does support.
    '("~/.ssh/age_yubikey.pub"
      "~/.ssh/age_recovery.pub"))
   :config
-  ;; bind identity and recipient to nil for temporary passphrase mode
-  (defun my/age-open-with-passphrase (file)
-    (interactive "fPassphrase encrypted age file: ")
-    (cl-letf (((symbol-value 'age-default-identity) nil)
-              ((symbol-value 'age-default-recipient) nil))
-      (find-file file)))
-
-  (defun my/age-save-with-passphrase ()
-    (interactive)
-    (cl-letf (((symbol-value 'age-default-identity) nil)
-              ((symbol-value 'age-default-recipient) nil))
-      (save-buffer)))
-
   (age-file-enable))
 
 (provide 'my-age-init)
@@ -125,7 +112,9 @@ has the following patches applied:
 https://patch-diff.githubusercontent.com/raw/org-roam/org-roam/pull/2302.patch
 
 This patch enables ~.org.age~ discoverability in ~org-roam~ and beyond that
-everything just works the same as you're used to with ~.org.gpg~ files.
+everything just works the same as you're used to with ~.org.gpg~ files. This
+patch was merged into org-roam ~main~ on Dec 31, 2022, so any org-roam release
+post that date should provide you with age support out of the box.
 
 * Other fun examples
 
@@ -167,40 +156,58 @@ I'm also using this as a way to get a good feel for just how much Emacs is
 interacting with my encrypted data.
 
 #+begin_src emacs-lisp
-  (require 'notifications)
+(require 'notifications)
 
-  (defun my/age-notify (msg)
-    (cond ((eq system-type 'gnu/linux)
-           (notifications-notify
-            :title "age.el"
-            :body (format "%s" msg)
-            :urgency 'low
-            :timeout 800))
-          ((eq system-type 'darwin)
-           (do-applescript
-            (format "display notification \"%s\" with title \"age.el\"" msg)))
-          (t
-           (message (format "age.el: %s" msg)))))
+(defun my/age-notify (msg)
+  (cond ((eq system-type 'gnu/linux)
+         (notifications-notify
+          :title "age.el"
+          :body (format "%s" msg)
+          :urgency 'low
+          :timeout 800))
+        ((eq system-type 'darwin)
+         (do-applescript
+          (format "display notification \"%s\" with title \"age.el\"" msg)))
+        (t
+         (message (format "age.el: %s" msg)))))
 
-  (defun my/age-notify-decrypt (&rest args)
-    (my/age-notify "decrypt"))
+(defun my/age-notify-decrypt (&rest args)
+  (my/age-notify "decrypt"))
 
-  (defun my/age-notify-encrypt (&rest args)
-    (my/age-notify "encrypt"))
+(defun my/age-notify-encrypt (&rest args)
+  (my/age-notify "encrypt"))
 
-  (advice-add #'age-start-decrypt :before #'my/age-notify-decrypt)
-  (advice-add #'age-start-encrypt :before #'my/age-notify-encrypt)
+(defun my/age-toggle-decrypt-notifications ()
+  (interactive)
+  (cond ((advice-member-p #'my/age-notify-decrypt #'age-start-decrypt)
+         (advice-remove #'age-start-decrypt #'my/age-notify-decrypt)
+         (message "Disabled age decrypt notifications."))
+        (t
+         (advice-add #'age-start-decrypt :before #'my/age-notify-decrypt)
+         (message "Enabled age decrypt notifications."))))
+
+(defun my/age-toggle-encrypt-notifications ()
+  (interactive)
+  (cond ((advice-member-p #'my/age-notify-encrypt #'age-start-encrypt)
+         (advice-remove #'age-start-encrypt #'my/age-notify-encrypt)
+         (message "Disabled age encrypt notifications."))
+        (t
+         (advice-add #'age-start-encrypt :before #'my/age-notify-encrypt)
+         (message "Enabled age encrypt notifications."))))
+
+;; we only care about decrypt notifications really
+(my/age-toggle-decrypt-notifications)
 #+end_src
 
 * Known issues
 
 ** Lack of pinentry support in age
 
-The age CLI does not support pinentry by design. Users are encouraged
-to use identity (private) keys and recipient (public) keys, and manage
-those secrets outside of Emacs accordingly. As such age.el does not
-currently support passphrase based age Encryption/Decryption as we
-do not have a tty available to provide a passphrase to age (I think).
+The age reference client does not support pinentry by design. Users are
+encouraged to use identity (private) keys and recipient (public) keys, and
+manage those secrets outside of Emacs accordingly. As such age.el does not
+currently support passphrase based age Encryption/Decryption as we do not have
+a tty available to provide a passphrase to age (I think).
 
 *** Workaround: pinentry support through rage
 
@@ -259,19 +266,15 @@ prompt you for passphrases in the minibuffer.
 
 ** Direct use of passphrase encrypted age files
 
-NOTE: by default you _CAN_ use passphrase encrypted age files as identities
-and this will work just fine with e.g. rage + pinentry. This issue is for when
-you want to _directly_ open/save passphrase encrypted age files outside of the
-identity based pinentry use case.
+This requires you to use rage, or another age-spec compliant client that
+supports pinentry.
 
-age.el does not encourage the use of passphrase encrypted files as anything
-but an identity container, however, if you want to open/save passphrase
-encrypted age files, you may do so by employing the following letf bindings to
-provide yourself with functions that enable direct passphrase support in
-age.el.
+By default, age.el will be able to open and save passphrase encrypted age
+files. It will detect the scrypt stanza in the age file and set the age.el
+handling context for passphrase mode accordingly.
 
-Note that this requires you to use rage, or another age-spec compliant client
-that supports pinentry.
+You can also programmatically force age.el into passphrase mode by binding
+~age-default-identity~ and ~age-default-recipient~ to nil temporarily, e.g.:
 
 #+begin_src emacs-lisp
 (defun my/age-open-with-passphrase (file)
@@ -287,24 +290,12 @@ that supports pinentry.
     (save-buffer)))
 #+end_src
 
-Binding age-default-identity and age-default-recipient to nil temporarily
-enables passphrase mode on age.el, and the above functions allow you to open,
-edit, and save passphrase encrypted age files.
+** org-roam support for age encrypted org files
 
-** org-roam does not support .age files
-
-A pull request to add age discoverability to org-roam is pending review at:
-https://github.com/org-roam/org-roam/pull/2302
-
-In the meantime you can use the following package recipe to build an org-roam
-version that supports age encrypted files:
-
-#+begin_src emacs-lisp
-(org-roam :fetcher github
-          :repo "anticomputer/org-roam" :branch "age-support")
-#+end_src
-
-I am using org-roam with .age encrypted files through age.el without issues.
+Org-roam has merged https://github.com/org-roam/org-roam/pull/2302 which
+provides ~.org.age~ discoverability support for org-roam, so if you update to
+the latest release from e.g. MELPA or the main branch, org-roam will function
+with .age encrypted org files.
 
 * Disclaimer
 
