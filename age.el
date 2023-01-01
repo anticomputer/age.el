@@ -1,4 +1,4 @@
-;;; age.el --- the Age Library -*- lexical-binding: t -*-
+;;; age.el --- The Age Encryption Library -*- lexical-binding: t -*-
 
 ;; EPG/EPA modified to work with Age: https://github.com/FiloSottile/age
 
