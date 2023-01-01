@@ -1,4 +1,4 @@
-;;; age.el --- the Age Library -*- lexical-binding: t -*-
+;;; age.el --- The Age Encryption Library -*- lexical-binding: t -*-
 
 ;; EPG/EPA modified to work with Age: https://github.com/FiloSottile/age
 
@@ -298,6 +298,7 @@ or higher is installed."
   protocol
   program
   armor
+  passphrase
   (passphrase-callback (list #'age-passphrase-callback-function))
   edit-callback
   process
@@ -329,6 +330,11 @@ or higher is installed."
   (declare (obsolete setf "25.1"))
   (setf (age-context-armor context) armor))
 
+(defun age-context-set-passphrase (context passphrase)
+  "Specify if the file is in PASSPHRASE mode."
+  (declare (obsolete setf "25.1"))
+  (setf (age-context-passphrase context) passphrase))
+
 ;; XXX: unused currently, so... untested.
 (defun age-context-set-passphrase-callback (context
 					    passphrase-callback)
@@ -346,6 +352,30 @@ question, and the callback data (if any)."
 	  passphrase-callback)))
 
 ;;; Functions
+
+(defun age-scrypt-p (file)
+  "Check for passphrase scrypt stanza in age FILE."
+  (with-temp-buffer
+    ;; disable age file handling for this insert, we just want to grab a header
+    (let ((file-name-handler-alist (remq age-file-handler file-name-handler-alist))
+          (auto-mode-alist (remq age-file-auto-mode-alist-entry auto-mode-alist)))
+      (insert-file-contents-literally file nil 0 100))
+    (let ((lines
+           ;; grab the first two lines
+           (cl-loop repeat 2
+                    unless (eobp)
+                    collect
+                    (prog1 (buffer-substring-no-properties
+                            (line-beginning-position)
+                            (line-end-position))
+                      (forward-line 1)))))
+      ;; if the first line is the ascii armor marker, base64 decode the second line
+      (let ((b64 (string-match-p
+                  "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
+            (l2 (cadr lines)))
+        ;; if the second line contains the scrypt stanza, it is a passphrase file
+        (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
+          t)))))
 
 (defun age-context-result-for (context name)
   "Return the result of CONTEXT associated with NAME."
@@ -567,7 +597,7 @@ If you are unsure, use synchronous version of this function
   (setf (age-context-result context) nil)
   (let ((identity
          ;; only nag if we're not in passphrase mode
-         (when age-default-identity
+         (unless (or (age-context-passphrase context) (not age-default-identity))
            (if (or age-always-use-default-keys
                    (y-or-n-p "Use default identity? "))
                age-default-identity
@@ -575,17 +605,17 @@ If you are unsure, use synchronous version of this function
     (age--start context
                 (append '("--decrypt")
                         ;; identity may be a list of identities, skip in passphrase mode
-                        (if age-default-identity
-                            (if (listp identity)
-                                (apply #'nconc
-			               (mapcar
-			                (lambda (id)
-                                          (when age-debug
-                                            (message "Adding id: %s" id))
-                                          (when (file-exists-p (expand-file-name id))
-                                            (list "-i" (expand-file-name id))))
-			                identity))
-                              (list "-i" (expand-file-name identity))))
+                        (unless (or (age-context-passphrase context) (not age-default-identity))
+                          (if (listp identity)
+                              (apply #'nconc
+			             (mapcar
+			              (lambda (id)
+                                        (when age-debug
+                                          (message "Adding id: %s" id))
+                                        (when (file-exists-p (expand-file-name id))
+                                          (list "-i" (expand-file-name id))))
+			              identity))
+                            (list "-i" (expand-file-name identity))))
                         (list "--" (age-data-file cipher))))))
 
 (defun age--check-error-for-decrypt (context)
@@ -640,38 +670,40 @@ If you are unsure, use synchronous version of this function
 `age-encrypt-file' or `age-encrypt-string' instead."
   (setf (age-context-operation context) 'encrypt)
   (setf (age-context-result context) nil)
-  ;; XXX: fixme ... we _ALWAYS_ need recipients
   (let ((recipients
          ;; ... unless we're in passphrase mode :P
-         (when age-default-recipient
+         (unless (or (age-context-passphrase context) (not age-default-recipient))
            (or recipients
                (age-select-keys
                 context
                 "Select recipients for encryption.")))))
-    (age--start context
-                ;; if recipients is nil, we go to the default identity
-	        (append '("--encrypt")
-                        ;; only add recipients if we're not in passphrase mode
-                        (if age-default-recipient
-		            (apply #'nconc
-			           (mapcar
-			            (lambda (recipient)
-                                      ;; recipients is a list of age public keys
-                                      (when age-debug
-                                        (message "Adding recipient: %s" recipient))
-                                      (if (file-exists-p (expand-file-name recipient))
-                                          (progn
-                                            (when age-debug
-                                              (message "Adding file based recipient(s)."))
-                                            (list "-R" (expand-file-name recipient)))
-                                        (when age-debug
-                                          (message "Adding string based recipient."))
-			                (list "-r" recipient)))
-			            recipients))
-                          ;; passphrase mode, requires rage for pinentry support
-                          (list "-p"))
-		        (if (age-data-file plain)
-			    (list "--" (age-data-file plain))))))
+    (age--start
+     context
+     ;; if recipients is nil, we go to the default identity
+     (append
+      '("--encrypt")
+      ;; only add recipients if we're not in passphrase mode
+      (if (or (age-context-passphrase context) (not age-default-recipient))
+          ;; passphrase mode, requires rage for pinentry support
+          (list "-p")
+        ;; recipient mode
+	(apply #'nconc
+	       (mapcar
+		(lambda (recipient)
+                  ;; recipients is a list of age public keys
+                  (when age-debug
+                    (message "Adding recipient: %s" recipient))
+                  (if (file-exists-p (expand-file-name recipient))
+                      (progn
+                        (when age-debug
+                          (message "Adding file based recipient(s)."))
+                        (list "-R" (expand-file-name recipient)))
+                    (when age-debug
+                      (message "Adding string based recipient."))
+		    (list "-r" recipient)))
+		recipients)))
+      (if (age-data-file plain)
+	  (list "--" (age-data-file plain))))))
   (when (age-data-string plain)
     (if (eq (process-status (age-context-process context)) 'run)
 	(process-send-string (age-context-process context)
@@ -979,6 +1011,7 @@ encryption is used."
 	 string length entry)
     (if visit
 	(setq buffer-file-name file))
+    (age-context-set-passphrase context (age-scrypt-p file))
     (age-context-set-passphrase-callback
      context
      (cons #'age-file-passphrase-callback-function
@@ -1115,6 +1148,7 @@ encryption is used."
 	   ((listp age-file-encrypt-to) age-file-encrypt-to)
 	   ((stringp age-file-encrypt-to) (list age-file-encrypt-to))))
 	 buffer)
+    (age-context-set-passphrase context (age-scrypt-p file))
     (age-context-set-passphrase-callback
      context
      (cons #'age-file-passphrase-callback-function
