@@ -259,19 +259,15 @@ prompt you for passphrases in the minibuffer.
 
 ** Direct use of passphrase encrypted age files
 
-NOTE: by default you _CAN_ use passphrase encrypted age files as identities
-and this will work just fine with e.g. rage + pinentry. This issue is for when
-you want to _directly_ open/save passphrase encrypted age files outside of the
-identity based pinentry use case.
+This requires you to use rage, or another age-spec compliant client that
+supports pinentry.
 
-age.el does not encourage the use of passphrase encrypted files as anything
-but an identity container, however, if you want to open/save passphrase
-encrypted age files, you may do so by employing the following letf bindings to
-provide yourself with functions that enable direct passphrase support in
-age.el.
+By default, age.el will be able to open and save passphrase encrypted age
+files. It will detect the scrypt stanza in the age file and set the age.el
+handling context for passphrase mode accordingly.
 
-Note that this requires you to use rage, or another age-spec compliant client
-that supports pinentry.
+You can also programmatically force age.el into passphrase mode by binding
+~age-default-identity~ and ~age-default-recipient~ to nil temporarily, e.g.:
 
 #+begin_src emacs-lisp
 (defun my/age-open-with-passphrase (file)
@@ -287,24 +283,12 @@ that supports pinentry.
     (save-buffer)))
 #+end_src
 
-Binding age-default-identity and age-default-recipient to nil temporarily
-enables passphrase mode on age.el, and the above functions allow you to open,
-edit, and save passphrase encrypted age files.
+** org-roam support for age encrypted org files
 
-** org-roam does not support .age files
-
-A pull request to add age discoverability to org-roam is pending review at:
-https://github.com/org-roam/org-roam/pull/2302
-
-In the meantime you can use the following package recipe to build an org-roam
-version that supports age encrypted files:
-
-#+begin_src emacs-lisp
-(org-roam :fetcher github
-          :repo "anticomputer/org-roam" :branch "age-support")
-#+end_src
-
-I am using org-roam with .age encrypted files through age.el without issues.
+Org-roam has merged https://github.com/org-roam/org-roam/pull/2302 which
+provides ~.org.age~ discoverability support for org-roam, so if you update to
+the latest release from e.g. MELPA or the main branch, org-roam will function
+with .age encrypted org files.
 
 * Disclaimer
 
