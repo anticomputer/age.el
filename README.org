@@ -101,19 +101,6 @@ which rage does support.
    '("~/.ssh/age_yubikey.pub"
      "~/.ssh/age_recovery.pub"))
   :config
-  ;; bind identity and recipient to nil for temporary passphrase mode
-  (defun my/age-open-with-passphrase (file)
-    (interactive "fPassphrase encrypted age file: ")
-    (cl-letf (((symbol-value 'age-default-identity) nil)
-              ((symbol-value 'age-default-recipient) nil))
-      (find-file file)))
-
-  (defun my/age-save-with-passphrase ()
-    (interactive)
-    (cl-letf (((symbol-value 'age-default-identity) nil)
-              ((symbol-value 'age-default-recipient) nil))
-      (save-buffer)))
-
   (age-file-enable))
 
 (provide 'my-age-init)
@@ -125,7 +112,9 @@ has the following patches applied:
 https://patch-diff.githubusercontent.com/raw/org-roam/org-roam/pull/2302.patch
 
 This patch enables ~.org.age~ discoverability in ~org-roam~ and beyond that
-everything just works the same as you're used to with ~.org.gpg~ files.
+everything just works the same as you're used to with ~.org.gpg~ files. This
+patch was merged into org-roam ~main~ on Dec 31, 2022, so any org-roam release
+post that date should provide you with age support out of the box.
 
 * Other fun examples
 
@@ -167,40 +156,58 @@ I'm also using this as a way to get a good feel for just how much Emacs is
 interacting with my encrypted data.
 
 #+begin_src emacs-lisp
-  (require 'notifications)
+(require 'notifications)
 
-  (defun my/age-notify (msg)
-    (cond ((eq system-type 'gnu/linux)
-           (notifications-notify
-            :title "age.el"
-            :body (format "%s" msg)
-            :urgency 'low
-            :timeout 800))
-          ((eq system-type 'darwin)
-           (do-applescript
-            (format "display notification \"%s\" with title \"age.el\"" msg)))
-          (t
-           (message (format "age.el: %s" msg)))))
+(defun my/age-notify (msg)
+  (cond ((eq system-type 'gnu/linux)
+         (notifications-notify
+          :title "age.el"
+          :body (format "%s" msg)
+          :urgency 'low
+          :timeout 800))
+        ((eq system-type 'darwin)
+         (do-applescript
+          (format "display notification \"%s\" with title \"age.el\"" msg)))
+        (t
+         (message (format "age.el: %s" msg)))))
 
-  (defun my/age-notify-decrypt (&rest args)
-    (my/age-notify "decrypt"))
+(defun my/age-notify-decrypt (&rest args)
+  (my/age-notify "decrypt"))
 
-  (defun my/age-notify-encrypt (&rest args)
-    (my/age-notify "encrypt"))
+(defun my/age-notify-encrypt (&rest args)
+  (my/age-notify "encrypt"))
 
-  (advice-add #'age-start-decrypt :before #'my/age-notify-decrypt)
-  (advice-add #'age-start-encrypt :before #'my/age-notify-encrypt)
+(defun my/age-toggle-decrypt-notifications ()
+  (interactive)
+  (cond ((advice-member-p #'my/age-notify-decrypt #'age-start-decrypt)
+         (advice-remove #'age-start-decrypt #'my/age-notify-decrypt)
+         (message "Disabled age decrypt notifications."))
+        (t
+         (advice-add #'age-start-decrypt :before #'my/age-notify-decrypt)
+         (message "Enabled age decrypt notifications."))))
+
+(defun my/age-toggle-encrypt-notifications ()
+  (interactive)
+  (cond ((advice-member-p #'my/age-notify-encrypt #'age-start-encrypt)
+         (advice-remove #'age-start-encrypt #'my/age-notify-encrypt)
+         (message "Disabled age encrypt notifications."))
+        (t
+         (advice-add #'age-start-encrypt :before #'my/age-notify-encrypt)
+         (message "Enabled age encrypt notifications."))))
+
+;; we only care about decrypt notifications really
+(my/age-toggle-decrypt-notifications)
 #+end_src
 
 * Known issues
 
 ** Lack of pinentry support in age
 
-The age CLI does not support pinentry by design. Users are encouraged
-to use identity (private) keys and recipient (public) keys, and manage
-those secrets outside of Emacs accordingly. As such age.el does not
-currently support passphrase based age Encryption/Decryption as we
-do not have a tty available to provide a passphrase to age (I think).
+The age reference client does not support pinentry by design. Users are
+encouraged to use identity (private) keys and recipient (public) keys, and
+manage those secrets outside of Emacs accordingly. As such age.el does not
+currently support passphrase based age Encryption/Decryption as we do not have
+a tty available to provide a passphrase to age (I think).
 
 *** Workaround: pinentry support through rage
 
