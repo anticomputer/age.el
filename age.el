@@ -330,6 +330,11 @@ or higher is installed."
   (declare (obsolete setf "25.1"))
   (setf (age-context-armor context) armor))
 
+(defun age-context-set-passphrase (context passphrase)
+  "Specify if the file is in PASSPHRASE mode."
+  (declare (obsolete setf "25.1"))
+  (setf (age-context-passphrase context) passphrase))
+
 ;; XXX: unused currently, so... untested.
 (defun age-context-set-passphrase-callback (context
 					    passphrase-callback)
@@ -1143,6 +1148,7 @@ encryption is used."
 	   ((listp age-file-encrypt-to) age-file-encrypt-to)
 	   ((stringp age-file-encrypt-to) (list age-file-encrypt-to))))
 	 buffer)
+    (age-context-set-passphrase context (age-scrypt-p file))
     (age-context-set-passphrase-callback
      context
      (cons #'age-file-passphrase-callback-function
