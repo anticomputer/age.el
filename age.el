@@ -6,8 +6,9 @@
 ;;        Bas Alberts <bas@anti.computer>
 ;;
 ;; Maintainer: Bas Alberts <bas@anti.computer>
-;; Package-Requires: ((emacs "27.1"))
-;; Keywords: emacs
+;; Homepage: https://github.com/anticomputer/age.el
+;; Package-Requires: ((emacs "28.1"))
+;; Keywords: data
 ;; Version: 0.1.0
 
 ;; This is a port of epg.el and epa-file.el, original copyright applies:
@@ -36,14 +37,14 @@
 ;;; Commentary:
 
 ;; age.el is intended to provide transparent Age based file encryption
-;; and decryption in Emacs. As such age.el does not support all
-;; Age CLI based use cases. Rather age.el assumes you have configured
+;; and decryption in Emacs.  As such age.el does not support all
+;; Age CLI based use cases.  Rather age.el assumes you have configured
 ;; a default identity and a default recipient, e.g. based off your
 ;; ssh private key and ssh public key in ~/.ssh/id_rsa[.pub], which
 ;; is the default setting.
 
 ;; The main use case is for folks who like to e.g. encrypt their org
-;; notes and things of that nature. Since age.el provides is a direct
+;; notes and things of that nature.  Since age.el provides is a direct
 ;; port from EPG/EPA it can support all roles that .gpg files can
 ;; support in Emacs, e.g. ~/.authinfo.age should work fine as well.
 
@@ -200,8 +201,7 @@ version requirement is met."
 
 ;; Create an `age-configuration' object for `age', using PROGRAM.
 (defun age-config--make-age-configuration (program)
-  ;; deal with variance in age versioning, some have vX.X.X some have X.X.X
-  ;; e.g. macports has v1.0.0 and nixos has 1.0.0
+  "Make an age configuration for PROGRAM."
   (let ((version
          (let ((v (shell-command-to-string (format "%s --version" program))))
            ;; assuming https://semver.org/
@@ -313,7 +313,7 @@ or higher is installed."
 ;;;; Context Methods
 
 (cl-defmacro age-with-dev-shm (&body body)
-  "Bind temporary-file-directory to /dev/shm if it exists."
+  "Bind variable `temporary-file-directory' to /dev/shm for BODY."
   `(let ((temporary-file-directory
           (if (file-directory-p "/dev/shm/")
               "/dev/shm/"
@@ -323,20 +323,19 @@ or higher is installed."
 ;; This is not an alias, just so we can mark it as autoloaded.
 ;;;###autoload
 (defun age-make-context (&optional protocol armor)
-  "Return a context object."
+  "Return a context object for PROTOCOL with ARMOR."
   (age-context--make (or protocol 'Age) armor))
 
 ;; XXX: unused currently, so... untested.
 (defun age-context-set-passphrase-callback (context
 					    passphrase-callback)
-  "Set the function used to query passphrase.
+  "Set the function used to query passphrase for CONTEXT.
 
 PASSPHRASE-CALLBACK is either a function, or a cons-cell whose
 car is a function and cdr is a callback data.
 
 The function gets three arguments: the context, the key-id in
 question, and the callback data (if any)."
-  ;; (declare (obsolete setf "25.1"))
   (setf (age-context-passphrase-callback context)
         (if (functionp passphrase-callback)
 	    (list passphrase-callback)
@@ -381,6 +380,7 @@ question, and the callback data (if any)."
       (setf (age-context-result context) (cons (cons name value) result)))))
 
 (defun age-error-to-string (error)
+  "Translate ERROR into a string."
   (cond
    ;; general age-error
    ((eq (car error) 'age-error)
@@ -389,10 +389,11 @@ question, and the callback data (if any)."
    (t (message "XXX: Translate this error: %s" error))))
 
 (defun age-errors-to-string (errors)
+  "Return a list of ERRORS as a string."
   (mapconcat #'age-error-to-string errors "; "))
 
 (defun age--start (context args)
-  "Start `age-program' in a subprocess with given ARGS."
+  "Start `age-program' in a subprocess with given ARGS for CONTEXT."
   (if (and (age-context-process context)
 	   (eq (process-status (age-context-process context)) 'run))
       (error "%s is already running in this context"
@@ -447,10 +448,13 @@ question, and the callback data (if any)."
 				    :noquery t))))
     (setf (age-context-process context) process)))
 
-(defun age--process-stdout-filter (_process input)
-  (message "debug: age stdout: %s" input))
+(defun age--process-stdout-filter (_process _input)
+  "Filter for age client process stdout."
+  (when age-debug
+    (message "debug: age stdout: %s" input)))
 
 (defun age--process-stderr-filter (process input)
+  "Filter for age client PROCESS stderr INPUT."
   (when age-debug
     (with-current-buffer
         (or age-debug-buffer
@@ -479,7 +483,7 @@ question, and the callback data (if any)."
 	  (buffer-string)))))
 
 (defun age-wait-for-completion (context)
-  "Wait until the `age-program' process completes."
+  "Wait until the `age-program' process completes for CONTEXT."
   (while (eq (process-status (age-context-process context)) 'run)
     (accept-process-output (age-context-process context) 1))
   ;; This line is needed to run the process-filter right now.
@@ -510,6 +514,7 @@ question, and the callback data (if any)."
 ;; XXX: completely untested, artifact from EPA's status handling
 ;; XXX: rework this when we get a pinentry solution available
 (defun age--status-GET_PASSPHRASE (context string)
+  "Retrieve a passphrase out of CONTEXT if STRING indicates a prompt."
   (when (string-match "\\`passphrase\\." string)
     (unless (age-context-passphrase-callback context)
       (error "Variable `passphrase-callback' not set"))
@@ -559,11 +564,13 @@ question, and the callback data (if any)."
 ;;; Status Functions
 
 (defun age--status-AGE_FAILED (context _string)
+  "Set age status for CONTEXT to AGE_FAILED."
   (age-context-set-result-for context 'age-failed t))
 
 ;;; Public Functions
 
 (defun age-cancel (context)
+  "Cancel the age client process for CONTEXT."
   (if (buffer-live-p (process-buffer (age-context-process context)))
       (with-current-buffer (process-buffer (age-context-process context))
 	(age-context-set-result-for
@@ -574,7 +581,7 @@ question, and the callback data (if any)."
       (delete-process (age-context-process context))))
 
 (defun age-start-decrypt (context cipher)
-  "Initiate a decrypt operation on CIPHER.
+  "Initiate a decrypt operation on CIPHER for CONTEXT.
 CIPHER must be a file data object.
 
 If you use this function, you will need to wait for the completion of
@@ -610,13 +617,14 @@ If you are unsure, use synchronous version of this function
                         (list "--" (age-data-file cipher))))))
 
 (defun age--check-error-for-decrypt (context)
+  "Check CONTEXT for decrypt errors."
   (let ((errors (age-context-result-for context 'error)))
     (if (age-context-result-for context 'age-failed)
 	(signal 'age-error
 		(list "Age failed with error" (age-errors-to-string errors))))))
 
 (defun age-decrypt-file (context cipher plain)
-  "Decrypt a file CIPHER and store the result to a file PLAIN.
+  "Decrypt a file CIPHER under CONTEXT and store the result to a file PLAIN.
 If PLAIN is nil, it returns the result as a string."
   (unwind-protect
       (progn
@@ -632,7 +640,7 @@ If PLAIN is nil, it returns the result as a string."
     (age-reset context)))
 
 (defun age-decrypt-string (context cipher)
-  "Decrypt a string CIPHER and return the plain text."
+  "Decrypt a string CIPHER under CONTEXT and return the plain text."
   (let ((input-file (age-with-dev-shm (make-temp-file "age-input")))
 	(coding-system-for-write 'binary))
     (unwind-protect
@@ -650,7 +658,7 @@ If PLAIN is nil, it returns the result as a string."
       (age-reset context))))
 
 (defun age-start-encrypt (context plain recipients)
-  "Initiate an encrypt operation on PLAIN.
+  "Initiate an encrypt operation on PLAIN under CONTEXT for RECIPIENTS.
 PLAIN is a data object.
 If RECIPIENTS is nil, it performs symmetric encryption.
 
@@ -703,7 +711,7 @@ If you are unsure, use synchronous version of this function
 	(process-send-eof (age-context-process context)))))
 
 (defun age-encrypt-file (context plain recipients cipher)
-  "Encrypt a file PLAIN and store the result to a file CIPHER.
+  "Encrypt a file PLAIN under CONTEXT and store the result to a file CIPHER.
 If CIPHER is nil, it returns the result as a string.
 If RECIPIENTS is nil, it performs symmetric encryption."
   (unwind-protect
@@ -723,7 +731,7 @@ If RECIPIENTS is nil, it performs symmetric encryption."
     (age-reset context)))
 
 (defun age-encrypt-string (context plain recipients)
-  "Encrypt a string PLAIN.
+  "Encrypt a string PLAIN under CONTEXT.
 If RECIPIENTS is nil, it performs symmetric encryption."
   (let ((input-file
          ;; XXX: this is always true, but keep the protocol flexibility for now
@@ -755,6 +763,7 @@ If RECIPIENTS is nil, it performs symmetric encryption."
 ;;; Decode Functions
 
 (defun age--decode-percent-escape (string)
+  "Decode percent escapes in STRING."
   (setq string (encode-coding-string string 'raw-text))
   (let ((index 0))
     (while (string-match "%\\(\\(%\\)\\|\\([[:xdigit:]][[:xdigit:]]\\)\\)"
@@ -770,10 +779,12 @@ If RECIPIENTS is nil, it performs symmetric encryption."
     string))
 
 (defun age--decode-percent-escape-as-utf-8 (string)
+  "Decode percent escape as utf-8 in STRING."
   (declare (obsolete rfc6068-unhexify-string "28.1"))
   (decode-coding-string (age--decode-percent-escape string) 'utf-8))
 
 (defun age--decode-hexstring (string)
+  "Decode hexstring in STRING."
   (declare (obsolete rfc6068-unhexify-string "28.1"))
   (let ((index 0))
     (while (eq index (string-match "[[:xdigit:]][[:xdigit:]]" string index))
@@ -784,6 +795,7 @@ If RECIPIENTS is nil, it performs symmetric encryption."
     string))
 
 (defun age--decode-quotedstring (string)
+  "Decode quotedstring STRING."
   (let ((index 0))
     (while (string-match "\\\\\\(\\([,=+<>#;\\\"]\\)\\|\
 \\([[:xdigit:]][[:xdigit:]]\\)\\)"
@@ -834,11 +846,13 @@ May either be a string or a list of strings.")
   (list age-file-name-regexp nil 'age-file))
 
 (defun age-file-find-file-hook ()
+  "Age find file hook."
   (if (and buffer-file-name
 	   (string-match age-file-name-regexp buffer-file-name)
 	   age-file-inhibit-auto-save)
       (auto-save-mode 0)))
 
+;;;###autoload
 (define-minor-mode age-encryption-mode
   "Toggle automatic Age file encryption/decryption (Age Encryption mode)."
   :global t :init-value t :group 'age-file :version "0.1"
@@ -881,6 +895,7 @@ encryption is used."
 
 ;; XXX: fixme when we have a pinentry available
 (defun age-passphrase-callback-function (context handback)
+  "Age passphrase callback under CONTEXT with HANDBACK."
   (read-passwd
    (format "Passphrase%s: "
 	   ;; Add the file name to the prompt, if any.
@@ -891,6 +906,7 @@ encryption is used."
 
 ;; XXX: fixme when we have a pinentry available
 (defun age-file-passphrase-callback-function (context _key-id file)
+  "Age file passphrase callback under CONTEXT for FILE."
   (if age-file-cache-passphrase-for-symmetric-encryption
       (progn
         (setq file (file-truename file))
@@ -915,6 +931,7 @@ encryption is used."
 (defvar age-suppress-error-buffer nil)
 
 (defun age-display-error (context)
+  "Display error for CONTEXT."
   (unless (or (equal (age-context-error-output context) "")
               age-suppress-error-buffer)
     (let ((buffer (get-buffer-create "*Error*")))
@@ -945,6 +962,7 @@ encryption is used."
 
 ;;;###autoload
 (defun age-file-handler (operation &rest args)
+  "Run age file OPERATION handler with ARGS."
   (save-match-data
     (let ((op (get operation 'age-file)))
       (if (and op (not age-inhibit))
@@ -952,6 +970,7 @@ encryption is used."
   	(age-file-run-real-handler operation args)))))
 
 (defun age-file-run-real-handler (operation args)
+  "Run age file OPERATION handler with ARGS."
   (let ((inhibit-file-name-handlers
 	 (cons 'age-file-handler
 	       (and (eq inhibit-file-name-operation operation)
@@ -960,6 +979,9 @@ encryption is used."
     (apply operation args)))
 
 (defun age-file-decode-and-insert (string file visit beg end replace)
+  "Insert STRING as if it is read from FILE.
+Optional arguments VISIT, BEG, END, and REPLACE are the same as those
+of the function `insert-file-contents'"
   (save-restriction
     (narrow-to-region (point) (point))
     (insert string)
@@ -972,6 +994,7 @@ encryption is used."
 
 (defvar age-file-error nil)
 (defun age-file--find-file-not-found-function ()
+  "File not found function."
   (let ((error age-file-error))
     (save-window-excursion
       (kill-buffer))
@@ -981,6 +1004,7 @@ encryption is used."
 	      (cons "Opening input file" (cdr error))))))
 
 (defun age--wrong-password-p (context)
+  "Check for incorrect passphrase error in CONTEXT."
   (let ((error-string (age-context-error-output context)))
     (and (string-match "\\(incorrect passphrase\\)"
                        error-string)
@@ -988,6 +1012,9 @@ encryption is used."
 
 (defvar last-coding-system-used)
 (defun age-file-insert-file-contents (file &optional visit beg end replace)
+  "Insert file contents for filename FILE.
+Optional arguments VISIT, BEG, END and REPLACE are the same as those
+of the function `insert-file-contents'."
   (barf-if-buffer-read-only)
   (if (and visit (or beg end))
       (error "Attempt to visit less than an entire file"))
@@ -1073,6 +1100,8 @@ encryption is used."
 (put 'insert-file-contents 'age-file 'age-file-insert-file-contents)
 
 (defun age-file--replace-text (string file visit beg end)
+  "Replace text with STRING for filename FILE.
+The VISIT, BEG, END arguments are as described in the function `age-file-decode-and-insert'"
   ;; The idea here is that we want to replace the text in the buffer
   ;; (for instance, for a `revert-buffer'), but we want to touch as
   ;; little of the text as possible.  So we compare the new and the
@@ -1108,6 +1137,7 @@ encryption is used."
   "Controls whether or not Age encrypted files will be ASCII armored.")
 
 (defun age-select-keys (_context _msg &optional recipients)
+  "Select the RECIPIENTS to encrypt to for the current age buffer."
   ;; file mode
   (let* ((selected-recipients
           ;; use age-file-encrypt-to if it's set, so we don't repeat the nag each save
@@ -1122,6 +1152,9 @@ encryption is used."
                       (t (append recipients (list selected-recipients)))))))
 
 (defun age-file-write-region (start end file &optional append visit lockname mustbenew)
+  "Write current region from START to END into specified FILE.
+Optional arguments APPEND, VISIT, LOCKNAME, MUSTBENEW are as described in
+function `write-region'."
   (if append
       (error "Can't append to the file"))
   (setq file (expand-file-name file))
@@ -1211,6 +1244,7 @@ encryption is used."
 
 ;;;###autoload
 (defun age-file-enable ()
+  "Enable age file handling."
   (interactive)
   (if (memq age-file-handler file-name-handler-alist)
       (message "`age-file' already enabled")
@@ -1222,6 +1256,7 @@ encryption is used."
 
 ;;;###autoload
 (defun age-file-disable ()
+  "Disable age file handling."
   (interactive)
   (if (memq age-file-handler file-name-handler-alist)
       (progn
