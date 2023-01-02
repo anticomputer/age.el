@@ -204,7 +204,8 @@ version requirement is met."
   ;; e.g. macports has v1.0.0 and nixos has 1.0.0
   (let ((version
          (let ((v (shell-command-to-string (format "%s --version" program))))
-           (when (string-match "^\\(?:v\\|rage\\)* *\\(.*\\)?\n*" v)
+           ;; assuming https://semver.org/
+           (when (string-match "\\([0-9]+\\.[0-9]+\\.[0-9]+\\)" v)
              (match-string 1 v)))))
     (list (cons 'program program)
           (cons 'version version))))
