@@ -974,11 +974,12 @@ encryption is used."
 (defun age-advise-tramp (&optional remove)
   "This prevents TRAMP from triggering intermediate age file decryption operations.
 
-Adds or optionally REMOVE's `age-inhibit-advice' to|from all functions listed in
-variable `age-tramp-inhibit-funcs'.
+Adds or optionally REMOVE's function `age-inhibit-advice' to|from all
+functions listed in variable `age-tramp-inhibit-funcs'.
 
-This is similar to how `epa-file-handler' is inhibited, but since we're not part
-of emacs we have to advice TRAMP to inhibit `age-file-handler' instead."
+This is similar to how function `epa-file-handler' is inhibited, but since we're
+not part of Emacs we have to advice TRAMP to inhibit function `age-file-handler'
+instead."
   (cl-loop for tramp-func in age-tramp-inhibit-funcs
            for member = (advice-member-p #'age-inhibit-advice tramp-func)
            do
