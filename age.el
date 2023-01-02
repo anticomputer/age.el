@@ -62,21 +62,23 @@
 (eval-when-compile (require 'subr-x))
 (eval-when-compile (require 'tramp-sh))
 
-;;; TRAMP handling advice
+;;; TRAMP disable age handling advice
 
 ;;disable age file handlers on local encoding
-(defun age-tramp-sh-handle-write-region-advice (orig-tramp-sh-handle-write-region &rest args)
-  "This advice disables age file handling in TRAMP region writes.
-This prevents TRAMP from triggering age file decryption when inserting local
-copies of the file during its write-region encoding. This is similar to how
-`epa-file-handler' is inhibited, but since we're not part of emacs we have
-to advice TRAMP to ignore `age-file-handler' instead."
+(defun age-disable-advice (orig-func &rest args)
+  "This advice disables age file handling in ORIG-FUNC with ARGS."
   (cl-letf (((symbol-value 'file-name-handler-alist)
              (remq age-file-handler file-name-handler-alist))
             ((symbol-value 'auto-mode-alist)
              (remq age-file-auto-mode-alist-entry auto-mode-alist)))
-    (apply orig-tramp-sh-handle-write-region args)))
-(advice-add 'tramp-sh-handle-write-region :around #'age-tramp-sh-handle-write-region-advice)
+    (apply orig-func args)))
+
+;; This prevents TRAMP from triggering age file decryption when inserting local
+;; copies of the file during its write-region encoding. This is similar to how
+;; `epa-file-handler' is inhibited, but since we're not part of emacs we have
+;; to advice TRAMP to ignore `age-file-handler' instead.
+(advice-add 'tramp-sh-handle-write-region :around #'age-disable-advice)
+(advice-add 'tramp-do-copy-or-rename-file-via-buffer :around #'age-disable-advice)
 
 ;;; Configuration
 
