@@ -9,7 +9,7 @@
 ;; Homepage: https://github.com/anticomputer/age.el
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: data
-;; Version: 0.1.0
+;; Version: 0.1.1
 
 ;; This is a port of epg.el and epa-file.el, original copyright applies:
 
@@ -66,7 +66,7 @@
 (defconst age-package-name "age"
   "Name of this package.")
 
-(defconst age-version-number "0.1"
+(defconst age-version-number "0.1.1"
   "Version number of this package.")
 
 ;;; Options
