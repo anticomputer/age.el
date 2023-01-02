@@ -11,15 +11,9 @@
 ;; Keywords: data
 ;; Version: 0.1.3
 
-;; This is a port of epg.el and epa-file.el, original copyright applies:
+;; This is a port of epg.el and epa-file.el, original copyright applies.
 
-;; Copyright (C) 1999-2000, 2002-2022 Free Software Foundation, Inc.
-
-;; Author: Daiki Ueno <ueno@unixuser.org>
-;; Keywords: emacs
-;; Version: 1.0.0
-
-;; This file is part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -61,20 +55,6 @@
 (eval-when-compile (require 'cl-lib))
 (eval-when-compile (require 'subr-x))
 (eval-when-compile (require 'tramp-sh))
-
-;;; TRAMP inhibit age advice
-
-(defun age-inhibit-advice (orig-func &rest args)
-  "This advice inhibits age file handling operations in ORIG-FUNC with ARGS."
-  (cl-letf (((symbol-value 'age-inhibit) t))
-    (apply orig-func args)))
-
-;; This prevents TRAMP from triggering age file decryption when inserting local
-;; copies of the file during its write-region encoding. This is similar to how
-;; `epa-file-handler' is inhibited, but since we're not part of emacs we have
-;; to advice TRAMP to inhibit `age-file-handler' instead.
-(advice-add 'tramp-sh-handle-write-region :around #'age-inhibit-advice)
-(advice-add 'tramp-do-copy-or-rename-file-via-buffer :around #'age-inhibit-advice)
 
 ;;; Configuration
 
@@ -466,7 +446,7 @@ question, and the callback data (if any)."
     (setf (age-context-process context) process)))
 
 (defun age--process-stdout-filter (_process input)
-  "Filter for age client process stdout."
+  "Filter for age client process stdout displaying INPUT in debug mode."
   (when age-debug
     (message "debug: age stdout: %s" input)))
 
@@ -844,15 +824,15 @@ If RECIPIENTS is nil, it performs symmetric encryption."
 May either be a string or a list of strings.")
 
 (put 'age-file-encrypt-to 'safe-local-variable
-     #'(lambda (val)
-	 (or (stringp val)
-	     (and (listp val)
-		  (catch 'safe
-		    (mapc (lambda (elt)
-			    (unless (stringp elt)
-			      (throw 'safe nil)))
-			  val)
-		    t)))))
+     (lambda (val)
+       (or (stringp val)
+	   (and (listp val)
+		(catch 'safe
+		  (mapc (lambda (elt)
+			  (unless (stringp elt)
+			    (throw 'safe nil)))
+			val)
+		  t)))))
 
 (put 'age-file-encrypt-to 'permanent-local t)
 
@@ -874,10 +854,12 @@ May either be a string or a list of strings.")
   "Toggle automatic Age file encryption/decryption (Age Encryption mode)."
   :global t :init-value t :group 'age-file :version "0.1"
   ;;:initialize 'custom-initialize-delay
+  (age-advise-tramp t)
   (setq file-name-handler-alist (delq age-file-handler file-name-handler-alist))
   (remove-hook 'find-file-hook #'age-file-find-file-hook)
   (setq auto-mode-alist (delq age-file-auto-mode-alist-entry auto-mode-alist))
   (when age-encryption-mode
+    (age-advise-tramp)
     (setq file-name-handler-alist (cons age-file-handler file-name-handler-alist))
     (add-hook 'find-file-hook 'age-file-find-file-hook)
     (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))))
@@ -976,6 +958,37 @@ encryption is used."
 
 (defvar age-inhibit nil
   "Non-nil means don't try to decrypt .age files when operating on them.")
+
+;;; TRAMP inhibit age advice
+
+(defun age-inhibit-advice (orig-func &rest args)
+  "This advice inhibits age file handling operations in ORIG-FUNC with ARGS."
+  (cl-letf (((symbol-value 'age-inhibit) t))
+    (apply orig-func args)))
+
+(defvar age-tramp-inhibit-funcs
+  #'(tramp-sh-handle-write-region
+     tramp-do-copy-or-rename-file-via-buffer)
+  "List of TRAMP functions to inhibit age.el file operations for.")
+
+(defun age-advise-tramp (&optional remove)
+  "This prevents TRAMP from triggering intermediate age file decryption operations.
+
+Adds or optionally REMOVE's function `age-inhibit-advice' to|from all
+functions listed in variable `age-tramp-inhibit-funcs'.
+
+This is similar to how function `epa-file-handler' is inhibited, but since we're
+not part of Emacs we have to advice TRAMP to inhibit function `age-file-handler'
+instead."
+  (cl-loop for tramp-func in age-tramp-inhibit-funcs
+           for member = (advice-member-p #'age-inhibit-advice tramp-func)
+           do
+           (when age-debug (message "%s age inhibit advice for: %s"
+                                    (if remove "Removing" "Adding") tramp-func))
+           (if (and remove member)
+               (advice-remove tramp-func #'age-inhibit-advice)
+             (unless member
+               (advice-add tramp-func :around #'age-inhibit-advice)))))
 
 ;;;###autoload
 (defun age-file-handler (operation &rest args)
@@ -1264,6 +1277,7 @@ function `write-region'."
 (defun age-file-enable ()
   "Enable age file handling."
   (interactive)
+  (age-advise-tramp)
   (if (memq age-file-handler file-name-handler-alist)
       (message "`age-file' already enabled")
     (setq file-name-handler-alist
@@ -1276,6 +1290,7 @@ function `write-region'."
 (defun age-file-disable ()
   "Disable age file handling."
   (interactive)
+  (age-advise-tramp t)
   (if (memq age-file-handler file-name-handler-alist)
       (progn
 	(setq file-name-handler-alist
