@@ -363,8 +363,7 @@ question, and the callback data (if any)."
   (when (file-exists-p (expand-file-name file))
     (with-temp-buffer
       ;; disable age file handling for this insert, we just want to grab a header
-      (let ((file-name-handler-alist (remq age-file-handler file-name-handler-alist))
-            (auto-mode-alist (remq age-file-auto-mode-alist-entry auto-mode-alist)))
+      (let ((age-inhibit t))
         (insert-file-contents-literally file nil 0 100))
       (let ((lines
              ;; grab the first two lines
