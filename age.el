@@ -338,32 +338,6 @@ question, and the callback data (if any)."
 
 ;;; Functions
 
-(defun age-scrypt-p (file)
-  "Check for passphrase scrypt stanza in age FILE."
-  (when (file-exists-p (expand-file-name file))
-    (with-temp-buffer
-      ;; disable age file handling for this insert, we just want to grab a header
-      (cl-letf (((symbol-value 'age-inhibit) t))
-        (insert-file-contents-literally file nil 0 100))
-      (let ((lines
-             ;; grab the first two lines
-             (cl-loop repeat 2
-                      unless (eobp)
-                      collect
-                      (prog1 (buffer-substring-no-properties
-                              (line-beginning-position)
-                              (line-end-position))
-                        (forward-line 1)))))
-        ;; deal with empty/new files as well by checking for no lines
-        (when (and lines (= (length lines) 2))
-          ;; if the first line is the ascii armor marker, base64 decode the second line
-          (let ((b64 (string-match-p
-                      "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
-                (l2 (cadr lines)))
-            ;; if the second line contains the scrypt stanza, it is a passphrase file
-            (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
-              t)))))))
-
 (defun age-context-result-for (context name)
   "Return the result of CONTEXT associated with NAME."
   (cdr (assq name (age-context-result context))))
@@ -958,6 +932,32 @@ encryption is used."
 
 (defvar age-inhibit nil
   "Non-nil means don't try to decrypt .age files when operating on them.")
+
+(defun age-scrypt-p (file)
+  "Check for passphrase scrypt stanza in age FILE."
+  (when (file-exists-p (expand-file-name file))
+    (with-temp-buffer
+      ;; disable age file handling for this insert, we just want to grab a header
+      (cl-letf (((symbol-value 'age-inhibit) t))
+        (insert-file-contents-literally file nil 0 100))
+      (let ((lines
+             ;; grab the first two lines
+             (cl-loop repeat 2
+                      unless (eobp)
+                      collect
+                      (prog1 (buffer-substring-no-properties
+                              (line-beginning-position)
+                              (line-end-position))
+                        (forward-line 1)))))
+        ;; deal with empty/new files as well by checking for no lines
+        (when (and lines (= (length lines) 2))
+          ;; if the first line is the ascii armor marker, base64 decode the second line
+          (let ((b64 (string-match-p
+                      "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
+                (l2 (cadr lines)))
+            ;; if the second line contains the scrypt stanza, it is a passphrase file
+            (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
+              t)))))))
 
 ;;; TRAMP inhibit age advice
 
