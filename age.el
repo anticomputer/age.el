@@ -824,15 +824,15 @@ If RECIPIENTS is nil, it performs symmetric encryption."
 May either be a string or a list of strings.")
 
 (put 'age-file-encrypt-to 'safe-local-variable
-     #'(lambda (val)
-	 (or (stringp val)
-	     (and (listp val)
-		  (catch 'safe
-		    (mapc (lambda (elt)
-			    (unless (stringp elt)
-			      (throw 'safe nil)))
-			  val)
-		    t)))))
+     (lambda (val)
+       (or (stringp val)
+	   (and (listp val)
+		(catch 'safe
+		  (mapc (lambda (elt)
+			  (unless (stringp elt)
+			    (throw 'safe nil)))
+			val)
+		  t)))))
 
 (put 'age-file-encrypt-to 'permanent-local t)
 
