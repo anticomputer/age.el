@@ -9,7 +9,7 @@
 ;; Homepage: https://github.com/anticomputer/age.el
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: data
-;; Version: 0.1.1
+;; Version: 0.1.2
 
 ;; This is a port of epg.el and epa-file.el, original copyright applies:
 
@@ -66,7 +66,7 @@
 (defconst age-package-name "age"
   "Name of this package.")
 
-(defconst age-version-number "0.1.1"
+(defconst age-version-number "0.1.2"
   "Version number of this package.")
 
 ;;; Options
@@ -345,29 +345,30 @@ question, and the callback data (if any)."
 
 (defun age-scrypt-p (file)
   "Check for passphrase scrypt stanza in age FILE."
-  (with-temp-buffer
-    ;; disable age file handling for this insert, we just want to grab a header
-    (let ((file-name-handler-alist (remq age-file-handler file-name-handler-alist))
-          (auto-mode-alist (remq age-file-auto-mode-alist-entry auto-mode-alist)))
-      (insert-file-contents-literally file nil 0 100))
-    (let ((lines
-           ;; grab the first two lines
-           (cl-loop repeat 2
-                    unless (eobp)
-                    collect
-                    (prog1 (buffer-substring-no-properties
-                            (line-beginning-position)
-                            (line-end-position))
-                      (forward-line 1)))))
-      ;; deal with empty/new files as well by checking for no lines
-      (when lines
-        ;; if the first line is the ascii armor marker, base64 decode the second line
-        (let ((b64 (string-match-p
-                    "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
-              (l2 (cadr lines)))
-          ;; if the second line contains the scrypt stanza, it is a passphrase file
-          (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
-            t))))))
+  (when (file-exists-p (expand-file-name file))
+    (with-temp-buffer
+      ;; disable age file handling for this insert, we just want to grab a header
+      (let ((file-name-handler-alist (remq age-file-handler file-name-handler-alist))
+            (auto-mode-alist (remq age-file-auto-mode-alist-entry auto-mode-alist)))
+        (insert-file-contents-literally file nil 0 100))
+      (let ((lines
+             ;; grab the first two lines
+             (cl-loop repeat 2
+                      unless (eobp)
+                      collect
+                      (prog1 (buffer-substring-no-properties
+                              (line-beginning-position)
+                              (line-end-position))
+                        (forward-line 1)))))
+        ;; deal with empty/new files as well by checking for no lines
+        (when (and lines (= (length lines) 2))
+          ;; if the first line is the ascii armor marker, base64 decode the second line
+          (let ((b64 (string-match-p
+                      "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
+                (l2 (cadr lines)))
+            ;; if the second line contains the scrypt stanza, it is a passphrase file
+            (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
+              t)))))))
 
 (defun age-context-result-for (context name)
   "Return the result of CONTEXT associated with NAME."
