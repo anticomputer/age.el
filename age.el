@@ -468,7 +468,7 @@ question, and the callback data (if any)."
 				    :noquery t))))
     (setf (age-context-process context) process)))
 
-(defun age--process-stdout-filter (_process _input)
+(defun age--process-stdout-filter (_process input)
   "Filter for age client process stdout."
   (when age-debug
     (message "debug: age stdout: %s" input)))
@@ -1121,7 +1121,8 @@ of the function `insert-file-contents'."
 
 (defun age-file--replace-text (string file visit beg end)
   "Replace text with STRING for filename FILE.
-The VISIT, BEG, END arguments are as described in the function `age-file-decode-and-insert'"
+The VISIT, BEG, END arguments are as described in the function
+`age-file-decode-and-insert'"
   ;; The idea here is that we want to replace the text in the buffer
   ;; (for instance, for a `revert-buffer'), but we want to touch as
   ;; little of the text as possible.  So we compare the new and the
