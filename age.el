@@ -359,13 +359,15 @@ question, and the callback data (if any)."
                             (line-beginning-position)
                             (line-end-position))
                       (forward-line 1)))))
-      ;; if the first line is the ascii armor marker, base64 decode the second line
-      (let ((b64 (string-match-p
-                  "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
-            (l2 (cadr lines)))
-        ;; if the second line contains the scrypt stanza, it is a passphrase file
-        (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
-          t)))))
+      ;; deal with empty/new files as well by checking for no lines
+      (when lines
+        ;; if the first line is the ascii armor marker, base64 decode the second line
+        (let ((b64 (string-match-p
+                    "-----BEGIN AGE ENCRYPTED FILE-----" (car lines)))
+              (l2 (cadr lines)))
+          ;; if the second line contains the scrypt stanza, it is a passphrase file
+          (when (string-match-p "-> scrypt " (if b64 (base64-decode-string l2) l2))
+            t))))))
 
 (defun age-context-result-for (context name)
   "Return the result of CONTEXT associated with NAME."
