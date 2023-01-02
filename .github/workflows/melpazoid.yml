@@ -4,7 +4,7 @@
 # to .github/workflows/melpazoid.yml and modifying RECIPE and EXIST_OK below.
 
 name: melpazoid
-on: [push, pull_request]
+on: [push]
 
 jobs:
   build:
