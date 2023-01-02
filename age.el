@@ -9,26 +9,26 @@
 ;; Homepage: https://github.com/anticomputer/age.el
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: data
-;; Version: 0.1.3
-
-;; This is a port of epg.el and epa-file.el, original copyright applies.
+;; Version: 0.1.4
 
 ;; This file is NOT part of GNU Emacs.
 
-;; GNU Emacs is free software: you can redistribute it and/or modify
+;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
 
-;; GNU Emacs is distributed in the hope that it will be useful,
+;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
+;; This is a port of epg.el and epa-file.el, original copyright applies.
 
 ;; age.el is intended to provide transparent Age based file encryption
 ;; and decryption in Emacs.  As such age.el does not support all
@@ -61,7 +61,7 @@
 (defconst age-package-name "age"
   "Name of this package.")
 
-(defconst age-version-number "0.1.3"
+(defconst age-version-number "0.1.4"
   "Version number of this package.")
 
 ;;; Options
@@ -835,7 +835,7 @@ May either be a string or a list of strings.")
   (when age-encryption-mode
     (age-advise-tramp)
     (setq file-name-handler-alist (cons age-file-handler file-name-handler-alist))
-    (add-hook 'find-file-hook 'age-file-find-file-hook)
+    (add-hook 'find-file-hook #'age-file-find-file-hook)
     (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))))
 
 (put 'age-file-handler 'safe-magic t)
@@ -1097,7 +1097,7 @@ of the function `insert-file-contents'."
 		   ;; `find-file-noselect-1'.
 		   (setq-local age-file-error error)
 		   (add-hook 'find-file-not-found-functions
-			     'age-file--find-file-not-found-function
+			     #'age-file--find-file-not-found-function
 			     nil t)))
 	       (signal (if exists 'file-error 'file-missing)
 		       (cons "Opening input file" (cdr error))))))
@@ -1282,7 +1282,7 @@ function `write-region'."
       (message "`age-file' already enabled")
     (setq file-name-handler-alist
 	  (cons age-file-handler file-name-handler-alist))
-    (add-hook 'find-file-hook 'age-file-find-file-hook)
+    (add-hook 'find-file-hook #'age-file-find-file-hook)
     (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))
     (message "`age-file' enabled")))
 
@@ -1295,7 +1295,7 @@ function `write-region'."
       (progn
 	(setq file-name-handler-alist
 	      (delq age-file-handler file-name-handler-alist))
-	(remove-hook 'find-file-hook 'age-file-find-file-hook)
+	(remove-hook 'find-file-hook #'age-file-find-file-hook)
 	(setq auto-mode-alist (delq age-file-auto-mode-alist-entry
 				    auto-mode-alist))
 	(message "`age-file' disabled"))
