@@ -363,7 +363,7 @@ question, and the callback data (if any)."
   (when (file-exists-p (expand-file-name file))
     (with-temp-buffer
       ;; disable age file handling for this insert, we just want to grab a header
-      (let ((age-inhibit t))
+      (cl-letf (((symbol-value 'age-inhibit) t))
         (insert-file-contents-literally file nil 0 100))
       (let ((lines
              ;; grab the first two lines
