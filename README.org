@@ -3,20 +3,19 @@
 #+html:<p align="center"><img src="img/emacs-age.png"/></p>
 
 age.el provides transparent [[https://github.com/FiloSottile/age][Age]] file encryption and decryption in Emacs. It is
-based on the Emacs EasyPG code and offers similar Emacs file handling for [[https://github.com/C2SP/C2SP/blob/main/age.md][Age
-encrypted files]].
+based on the Emacs [[http://epg.osdn.jp/][EasyPG]] code and offers similar Emacs file handling
+for [[https://github.com/C2SP/C2SP/blob/main/age.md][Age encrypted files]].
 
-Using age.el you can e.g. maintain ~.org.age~ encrypted Org files, provide Age
-encrypted authentication information out of ~.authinfo.age~, and
+Using age.el you can, for example, maintain ~.org.age~ encrypted Org files,
+provide Age encrypted authentication information out of ~.authinfo.age~, and
 open/edit/save Age encrypted files via TRAMP.
 
 * Usage
 
-Put age.el somewhere in your load-path and:
+Put ~age.el~ in your ~load-path~ and:
 
 #+begin_src emacs-lisp
 (require 'age)
-
 (age-file-enable)
 #+end_src
 
@@ -30,7 +29,7 @@ Or, if you prefer to use ~use-package~:
   (age-file-enable))
 #+end_src
 
-You can now open, edit, and save age encryted files from Emacs as
+You can now open, edit, and save Age encryted files from Emacs as
 long as they end with the ~.age~ file extension. You can also ~find-file~
 new Age files and they will be encrypted to the ~age-default-recipient~ on
 first save.
@@ -333,9 +332,9 @@ Having said that, age.el is not intended to encourage you to abandon
 gpg. However, if you've been looking for a lighter weight alternative for
 Emacs encryption, it might be a good fit for you.
 
-* Licensing
+* License
 
-This code was ported from the EasyPG Emacs code and its original author is
+GPLv3
+
+This code was ported from the EasyPG Emacs code and the original author is
 Daiki Ueno <ueno@unixuser.org> who has assigned their copyright to the FSF.
-
-As such, age.el is licensed and provided under the terms of the GPLv3.
