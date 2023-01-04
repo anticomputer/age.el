@@ -282,6 +282,19 @@ with .age encrypted org files.
 Please see https://github.com/anticomputer/passage.el for an age based drop-in
 replacement for pass and its associated Emacs packages.
 
+I use the following configuration that also rebinds the =pass= function to
+=passage= for convenience:
+
+#+begin_src emacs-lisp
+(use-package passage
+  :quelpa (passage :fetcher github :repo "anticomputer/passage.el")
+  :ensure t
+  :demand
+  :config
+  ;; rebind function value for pass to passage
+  (fset #'pass (lambda () (interactive) (passage))))
+#+end_src
+
 * Disclaimer
 
 This is experimental software and subject to heavy feature iterations.
