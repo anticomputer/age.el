@@ -277,6 +277,11 @@ provides ~.org.age~ discoverability support for org-roam, so if you update to
 the latest release from e.g. MELPA or the main branch, org-roam will function
 with .age encrypted org files.
 
+** pass (https://passwordstore.org) and its Emacs packages depend on gpg
+
+Please see https://github.com/anticomputer/passage.el for an age based drop-in
+replacement for pass and its associated Emacs packages.
+
 * Disclaimer
 
 This is experimental software and subject to heavy feature iterations.
