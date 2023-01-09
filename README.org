@@ -1,3 +1,5 @@
+[[https://melpa.org/#/age][file:https://melpa.org/packages/age-badge.svg]]
+
 * age.el: age encryption support for Emacs
 
 #+html:<p align="center"><img src="img/emacs-age.png"/></p>
@@ -12,14 +14,7 @@ open/edit/save Age encrypted files via TRAMP.
 
 * Usage
 
-Put ~age.el~ in your ~load-path~ and:
-
-#+begin_src emacs-lisp
-(require 'age)
-(age-file-enable)
-#+end_src
-
-Or, if you prefer to use ~use-package~:
+Age is available on [[https://melpa.org/#/age][melpa]] and you can install it from there:
 
 #+begin_src emacs-lisp
 (use-package age
@@ -27,6 +22,13 @@ Or, if you prefer to use ~use-package~:
   :demand
   :config
   (age-file-enable))
+#+end_src
+
+Alternatively, put ~age.el~ in your ~load-path~ and:
+
+#+begin_src emacs-lisp
+(require 'age)
+(age-file-enable)
 #+end_src
 
 You can now open, edit, and save Age encryted files from Emacs as
