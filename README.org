@@ -19,7 +19,7 @@ Age is available on [[https://melpa.org/#/age][melpa]] and you can install it fr
 #+begin_src emacs-lisp
 (use-package age
   :ensure t
-  :demand
+  :demand t
   :config
   (age-file-enable))
 #+end_src
@@ -76,9 +76,8 @@ which rage does support.
 (use-package age
   :quelpa (age :fetcher github :repo "anticomputer/age.el")
   :ensure t
-  :demand
+  :demand t
   :custom
-  ;; use rage for pinentry, note this _has_ to go through customize
   (age-program "rage")
   (age-default-identity "~/.ssh/age_yubikey")
   (age-default-recipient
@@ -86,8 +85,6 @@ which rage does support.
      "~/.ssh/age_recovery.pub"))
   :config
   (age-file-enable))
-
-(provide 'my-age-init)
 #+end_src
 
 I use the above configuration in combination with a version of ~org-roam~ that
@@ -142,8 +139,10 @@ interacting with my encrypted data.
 #+begin_src emacs-lisp
 (require 'notifications)
 
-(defun my/age-notify (msg)
-  (cond ((eq system-type 'gnu/linux)
+(defun my/age-notify (msg &optional simple)
+  (cond (simple
+         (message (format "%s" msg)))
+        ((eq system-type 'gnu/linux)
          (notifications-notify
           :title "age.el"
           :body (format "%s" msg)
@@ -153,13 +152,15 @@ interacting with my encrypted data.
          (do-applescript
           (format "display notification \"%s\" with title \"age.el\"" msg)))
         (t
-         (message (format "age.el: %s" msg)))))
+         (message (format "%s" msg)))))
 
 (defun my/age-notify-decrypt (&rest args)
-  (my/age-notify "decrypt"))
+  (cl-destructuring-bind (context cipher) args
+    (my/age-notify (format "Decrypting %s" (age-data-file cipher)) t)))
 
 (defun my/age-notify-encrypt (&rest args)
-  (my/age-notify "encrypt"))
+  (cl-destructuring-bind (context plain recipients) args
+    (my/age-notify (format "Encrypting %s" (age-data-file plain)) t)))
 
 (defun my/age-toggle-decrypt-notifications ()
   (interactive)
@@ -181,6 +182,7 @@ interacting with my encrypted data.
 
 ;; we only care about decrypt notifications really
 (my/age-toggle-decrypt-notifications)
+(my/age-toggle-encrypt-notifications)
 #+end_src
 
 * Known issues
@@ -200,9 +202,8 @@ will work with rage as well. An example rage config may look like:
 #+begin_src emacs-lisp
 (use-package age
   :ensure t
-  :demand
+  :demand t
   :custom
-  ;; use rage for pinentry, note this _has_ to go through customize
   (age-program "rage")
   :config
   (age-file-enable))
@@ -291,7 +292,7 @@ I use the following configuration that also rebinds the =pass= function to
 (use-package passage
   :quelpa (passage :fetcher github :repo "anticomputer/passage.el")
   :ensure t
-  :demand
+  :demand t
   :config
   ;; rebind function value for pass to passage
   (fset #'pass (lambda () (interactive) (passage))))
