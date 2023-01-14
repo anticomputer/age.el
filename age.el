@@ -185,11 +185,12 @@ version requirement is met."
 (defun age-config--make-age-configuration (program)
   "Make an age configuration for PROGRAM."
   (let ((version
-         (let ((v (shell-command-to-string (format "%s --version" program))))
+         (pcase (shell-command-to-string (format "%s --version" program))
            ;; assuming https://semver.org/
-           (when (string-match "\\([0-9]+\\.[0-9]+\\.[0-9]+\\)" v)
-             (match-string 1 v)))))
-    (list (cons 'program program)
+           ((rx (let v (seq(+ digit) "." (+ digit) "." (+ digit)))) v)
+           ((rx "(devel)") "9.9.9")
+           (_ nil))))
+    (list (cons 'program "age")
           (cons 'version version))))
 
 ;;;###autoload
