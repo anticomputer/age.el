@@ -187,10 +187,10 @@ version requirement is met."
   (let ((version
          (pcase (shell-command-to-string (format "%s --version" program))
            ;; assuming https://semver.org/
-           ((rx (let v (seq(+ digit) "." (+ digit) "." (+ digit)))) v)
+           ((rx (let v (seq (+ digit) "." (+ digit) "." (+ digit)))) v)
            ((rx "(devel)") "9.9.9")
            (_ nil))))
-    (list (cons 'program "age")
+    (list (cons 'program program)
           (cons 'version version))))
 
 ;;;###autoload
