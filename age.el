@@ -71,7 +71,13 @@ By default it is a file path.
 
 A nil value indicates that you want to use passphrase encryption only.
 This is mostly provided for let-binding convenience."
-  :type 'file)
+  :type '(choice
+          (file :tag "File path to default recipient (public key path)")
+          (repeat
+           (choice
+            (file :tag "File path to default recipient (public key path)")
+            (string :tag "Default recipient (public key value")))
+          (string :tag "Default recipient (public key value")))
 
 (defcustom age-default-identity (expand-file-name "~/.ssh/id_rsa")
   "Default identity to use for age (private key).
@@ -83,7 +89,10 @@ a list of file paths to collections of private keys.
 
 A nil value indicates that you want to use passphrase decryption only.
 This is mostly provided for let-binding convenience."
-  :type 'file)
+  :type '(choice
+          (file :tag "File path to default identity (private key)")
+          (repeat
+           (file :tag "File path to default identity (private key)"))))
 
 (defcustom age-always-use-default-keys t
   "If non-nil, use default identities and recipients without nagging."
