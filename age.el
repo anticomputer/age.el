@@ -71,7 +71,7 @@ By default it is a file path.
 
 A nil value indicates that you want to use passphrase encryption only.
 This is mostly provided for let-binding convenience."
-  :type '(choice file (repeat file) string))
+  :type 'file)
 
 (defcustom age-default-identity (expand-file-name "~/.ssh/id_rsa")
   "Default identity to use for age (private key).
@@ -83,7 +83,7 @@ a list of file paths to collections of private keys.
 
 A nil value indicates that you want to use passphrase decryption only.
 This is mostly provided for let-binding convenience."
-  :type '(choice file (repeat file)))
+  :type 'file)
 
 (defcustom age-always-use-default-keys t
   "If non-nil, use default identities and recipients without nagging."
@@ -185,10 +185,11 @@ version requirement is met."
 (defun age-config--make-age-configuration (program)
   "Make an age configuration for PROGRAM."
   (let ((version
-         (let ((v (shell-command-to-string (format "%s --version" program))))
+         (pcase (shell-command-to-string (format "%s --version" program))
            ;; assuming https://semver.org/
-           (when (string-match "\\([0-9]+\\.[0-9]+\\.[0-9]+\\)" v)
-             (match-string 1 v)))))
+           ((rx (let v (seq (+ digit) "." (+ digit) "." (+ digit)))) v)
+           ((rx "(devel)") "9.9.9")
+           (_ nil))))
     (list (cons 'program program)
           (cons 'version version))))
 
