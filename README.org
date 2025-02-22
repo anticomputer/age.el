@@ -12,6 +12,9 @@ Using age.el you can, for example, maintain ~.org.age~ encrypted Org files,
 provide Age encrypted authentication information out of ~.authinfo.age~, and
 open/edit/save Age encrypted files via TRAMP.
 
+NOTE: a full featured passage Emacs package that functions with age.el is
+available [[https://github.com/anticomputer/passage.el][here]].
+
 * Usage
 
 Age is available on [[https://melpa.org/#/age][melpa]] and you can install it from there:
