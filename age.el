@@ -309,7 +309,7 @@ or higher is installed."
   `(let ((temporary-file-directory
           (if (file-directory-p "/dev/shm/")
               "/dev/shm/"
-            ,temporary-file-directory)))
+            temporary-file-directory)))
      ,@body))
 
 ;; This is not an alias, just so we can mark it as autoloaded.
