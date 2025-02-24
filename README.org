@@ -216,6 +216,32 @@ You will now be able to use passphrase protected Age identities and files.
 
 #+html:<p align="center"><img src="img/emacs-rage.png"/></p>
 
+**** Rage pinentry troubleshooting
+
+If you find that you are having trouble with rage's ability to decrypt pass
+phrase encrypted age identities or files, please ensure that the ~pinentry~
+program in your PATH is actually the one you intend to use and that it is
+compatible with your Emacs workflow. If you have multiple pinentry programs
+available and want to ensure rage uses a particular one, you can set its
+~PINENTRY_PROGRAM~ environment variable accordingly.
+
+For example, if you would like to ensure rage is using ~pinentry-something~
+you can set ~PINENTRY_PROGRAM~ in your age.el configuration:
+
+#+begin_src emacs-lisp
+(use-package age
+  :ensure t
+  :demand t
+  :custom
+  (age-program "rage")
+  :config
+  (setenv "PINENTRY_PROGRAM" "pinentry-something")
+  (age-file-enable))
+#+end_src
+
+Likewise, it is wise to check that whichever pinentry solution you decide on
+is actually available to and compatible with your Emacs environment.
+
 *** Tip: configuring pinentry-emacs for minibuffer passphrase entry
 
 If you'd like to keep your pinentry support inside of emacs entirely for
@@ -241,13 +267,33 @@ running by using the GNU ELPA [[https://elpa.gnu.org/packages/pinentry.html][pin
   (pinentry-start))
 #+end_src
 
+A complete `pinentry-emacs` enabled configuration may then look something
+like below:
+
+#+begin_src emacs-lisp
+(use-package pinentry
+  :config
+  (pinentry-start))
+
+(use-package age
+  :ensure t
+  :demand t
+  :custom
+  (age-program "rage")
+  :config
+  (setenv "PINENTRY_PROGRAM" "pinentry-emacs")
+  (age-file-enable))
+#+end_src
+
 With both of those requirements satisfied, rage will use ~pinentry-emacs~ to
 prompt you for passphrases in the minibuffer.
 
 #+html:<p align="center"><img src="img/rage-pinentry-emacs.png"/></p>
 
-Note: this will attempt to use Emacs as your pinentry for all commandline use
-of the rage client as well.
+Note: If you set pinentry-emacs as your default ~pinentry~ executable in your
+PATH, this will attempt to use Emacs as your pinentry for all commandline use
+of the rage client as well.  You may prefer to keep e.g. ~pinentry-ncurses~
+for this use case, so adjust your cli environment accordingly.
 
 ** Direct use of passphrase encrypted age files
 
