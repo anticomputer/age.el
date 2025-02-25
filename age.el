@@ -9,7 +9,7 @@
 ;; Homepage: https://github.com/anticomputer/age.el
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: data
-;; Version: 0.1.4
+;; Version: 0.1.6
 
 ;; This file is NOT part of GNU Emacs.
 
