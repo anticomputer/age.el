@@ -169,8 +169,11 @@ version requirement is met."
         (or (and (not no-cache) (alist-get protocol age--configurations))
             ;; If the executable value is already set with M-x
             ;; customize, use it without checking.
-            (if (and symbol (or (get symbol 'saved-value)
-                                (get symbol 'customized-value)))
+            (if (and symbol (or
+                             ;; use-package :custom blocks end up as theme values
+                             (get symbol 'theme-value)
+                             (get symbol 'saved-value)
+                             (get symbol 'customized-value)))
                 (let ((configuration
                        (funcall constructor (symbol-value symbol))))
                   (push (cons protocol configuration) age--configurations)
