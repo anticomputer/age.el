@@ -12,7 +12,7 @@ Using age.el you can, for example, maintain ~.org.age~ encrypted Org files,
 provide Age encrypted authentication information out of ~.authinfo.age~, and
 open/edit/save Age encrypted files via TRAMP.
 
-NOTE: a full featured passage Emacs package that functions with age.el is
+NOTE: a full featured [[https://github.com/FiloSottile/passage][passage]] Emacs package that functions with age.el is
 available [[https://github.com/anticomputer/passage.el][here]].
 
 * Usage
@@ -81,6 +81,14 @@ which rage does support.
   :ensure t
   :demand t
   :custom
+  ;; you should customize these and not just setq them
+  ;; while it won't break anything, age.el checks for
+  ;; variable customizations to supersede auto configs
+  ;; this only becomes an issue if you e.g. have both
+  ;; rage and age installed on a system and want to
+  ;; ensure that age-program is actually what is used
+  ;; as opposed to the first found compatible version
+  ;; of a supported Age client
   (age-program "rage")
   (age-default-identity "~/.ssh/age_yubikey")
   (age-default-recipient
