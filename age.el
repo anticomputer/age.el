@@ -197,8 +197,11 @@ version requirement is met."
          (pcase (shell-command-to-string (format "%s --version" program))
            ;; assuming https://semver.org/
            ((rx (let v (seq (+ digit) "." (+ digit) "." (+ digit)))) v)
-           ((rx "(devel)") "9.9.9")
-           (_ nil))))
+           ;; fall back to assuming a compatible version for PROGRAM
+           ;; certain distributions build age without version info
+           (_ (progn
+                (message "WARNING: age.el could not determine version for %s, falling back to 9.9.9" program)
+                "9.9.9")))))
     (list (cons 'program program)
           (cons 'version version))))
 
