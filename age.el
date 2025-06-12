@@ -1276,34 +1276,6 @@ function `write-region'."
                (age-make-context)
                "Select recipients for encryption.")))
 
-;;;###autoload
-(defun age-file-enable ()
-  "Enable age file handling."
-  (interactive)
-  (age-advise-tramp)
-  (if (memq age-file-handler file-name-handler-alist)
-      (message "`age-file' already enabled")
-    (setq file-name-handler-alist
-	  (cons age-file-handler file-name-handler-alist))
-    (add-hook 'find-file-hook #'age-file-find-file-hook)
-    (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))
-    (message "`age-file' enabled")))
-
-;;;###autoload
-(defun age-file-disable ()
-  "Disable age file handling."
-  (interactive)
-  (age-advise-tramp t)
-  (if (memq age-file-handler file-name-handler-alist)
-      (progn
-	(setq file-name-handler-alist
-	      (delq age-file-handler file-name-handler-alist))
-	(remove-hook 'find-file-hook #'age-file-find-file-hook)
-	(setq auto-mode-alist (delq age-file-auto-mode-alist-entry
-				    auto-mode-alist))
-	(message "`age-file' disabled"))
-    (message "`age-file' already disabled")))
-
 (provide 'age)
 
 ;;; age.el ends here
