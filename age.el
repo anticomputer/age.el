@@ -830,16 +830,9 @@ May either be a string or a list of strings.")
 (define-minor-mode age-encryption-mode
   "Toggle automatic Age file encryption/decryption (Age Encryption mode)."
   :global t :group 'age-file :version "0.1"
-  ;;:initialize 'custom-initialize-delay
-  (age-advise-tramp t)
-  (setq file-name-handler-alist (delq age-file-handler file-name-handler-alist))
-  (remove-hook 'find-file-hook #'age-file-find-file-hook)
-  (setq auto-mode-alist (delq age-file-auto-mode-alist-entry auto-mode-alist))
-  (when age-encryption-mode
-    (age-advise-tramp)
-    (setq file-name-handler-alist (cons age-file-handler file-name-handler-alist))
-    (add-hook 'find-file-hook #'age-file-find-file-hook)
-    (setq auto-mode-alist (cons age-file-auto-mode-alist-entry auto-mode-alist))))
+  (if age-encryption-mode
+      (age-file-enable)
+    (age-file-disable)))
 
 (put 'age-file-handler 'safe-magic t)
 (put 'age-file-handler 'operations '(write-region insert-file-contents))
