@@ -829,7 +829,7 @@ May either be a string or a list of strings.")
 ;;;###autoload
 (define-minor-mode age-encryption-mode
   "Toggle automatic Age file encryption/decryption (Age Encryption mode)."
-  :global t :init-value t :group 'age-file :version "0.1"
+  :global t :group 'age-file :version "0.1"
   ;;:initialize 'custom-initialize-delay
   (age-advise-tramp t)
   (setq file-name-handler-alist (delq age-file-handler file-name-handler-alist))
