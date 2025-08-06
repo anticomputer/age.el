@@ -9,7 +9,7 @@
 ;; Homepage: https://github.com/anticomputer/age.el
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: data
-;; Version: 0.1.7
+;; Version: 0.1.8
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -48,7 +48,7 @@
 (defconst age-package-name "age"
   "Name of this package.")
 
-(defconst age-version-number "0.1.4"
+(defconst age-version-number "0.1.8"
   "Version number of this package.")
 
 ;;; Options
